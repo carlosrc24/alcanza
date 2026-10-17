@@ -53,7 +53,9 @@ def tiempos_plan_c(m: pd.DataFrame) -> pd.DataFrame:
     return _a_largo(np.round(t, 1), m["ine"].to_numpy(), "min_tp")
 
 
-def tiempos_r5py(m: pd.DataFrame, origenes=None, max_memory="10G") -> pd.DataFrame:
+def tiempos_r5py(m: pd.DataFrame, origenes=None, max_memory="8G", tanda=20) -> pd.DataFrame:
+    """Calcula por tandas de orígenes y guarda cada una en data/interim/tiempos_r5py/ para poder
+    reanudar si el proceso se interrumpe (la red se construye una vez y r5py la cachea)."""
     sys.argv[1:] = ["--max-memory", max_memory]
     import geopandas as gpd
     import r5py
@@ -64,7 +66,19 @@ def tiempos_r5py(m: pd.DataFrame, origenes=None, max_memory="10G") -> pd.DataFra
     red = r5py.TransportNetwork(osm, feeds, allow_errors=True)
     pts = gpd.GeoDataFrame({"id": m["ine"]}, geometry=gpd.points_from_xy(m["lon"], m["lat"]), crs=4326)
     orig = pts if origenes is None else pts[pts["id"].isin(origenes)]
-    print("  r5py: matriz", len(orig), "×", len(pts), flush=True)
+    carpeta = INTERIM / "tiempos_r5py"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    partes = []
+    for k in range(0, len(orig), tanda):
+        f = carpeta / f"tanda_{k:03d}_{len(orig)}.csv"
+        if not f.exists():
+            print(f"  r5py: orígenes {k + 1}-{min(k + tanda, len(orig))} de {len(orig)}", flush=True)
+            _matriz_r5py(r5py, red, orig.iloc[k:k + tanda], pts).to_csv(f, index=False)
+        partes.append(pd.read_csv(f, dtype={"origen": str, "destino": str}))
+    return pd.concat(partes, ignore_index=True)
+
+
+def _matriz_r5py(r5py, red, orig, pts) -> pd.DataFrame:
     ttm = r5py.TravelTimeMatrix(
         red, origins=orig, destinations=pts,
         departure=dt.datetime.combine(FECHA_OBJETIVO, dt.time(7, 0)),
