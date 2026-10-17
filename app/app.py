@@ -49,15 +49,18 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------- datos
 @st.cache_resource
-def datos():
+def datos(version: float):
     D = R.cargar()
     D["geo"] = json.loads((PROCESSED / "municipios.geojson").read_text(encoding="utf-8"))
     D["fuentes"] = json.loads((PROCESSED / "fuentes.json").read_text(encoding="utf-8"))
-    D["metodo_tp"] = D["tt"]["metodo_tp"].iloc[0]
+    D["metodo_tp"] = {"r5py_gtfs_osm_p50_7a9h": "horarios reales (GTFS) en hora punta, mediana de 7:00 a 9:00",
+                      "plan_c_aproximado": "APROXIMADOS por distancia (plan C, provisional)"}.get(
+        D["tt"]["metodo_tp"].iloc[0], D["tt"]["metodo_tp"].iloc[0])
     return D
 
 
-D = datos()
+# la caché se invalida sola cuando se regeneran los ficheros de data/processed/
+D = datos(max(p.stat().st_mtime for p in PROCESSED.glob("*.csv")))
 NOM = {k: R.nombre_municipio(v) for k, v in D["nom"].items()}
 INES = sorted(NOM, key=lambda k: NOM[k])
 OCU = D["ocu"].set_index("id")
