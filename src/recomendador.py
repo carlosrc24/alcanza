@@ -87,7 +87,7 @@ def tiempos_desde(D, ine: str, modo: str) -> pd.Series:
 
 def mejores_destinos(D, ine, sector, T, modo, n=3) -> pd.DataFrame:
     t = tiempos_desde(D, ine, modo)
-    d = D["dest"][(D["dest"]["sector"] == sector) & (D["dest"]["T"] == T)].set_index("ine")
+    d = D["dest"][(D["dest"]["sector"] == sector) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == modo)].set_index("ine")
     d = d.join(t.rename("minutos"), how="inner")
     d = d[(d["minutos"] <= T) & (d["puestos"] >= 50)].copy()
     if d.empty:

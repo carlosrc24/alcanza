@@ -3,8 +3,10 @@
 Método 2SFCA (Shen 1998; Luo y Wang 2003):
   1) para cada destino j:  R_j = puestos_j / Σ_k parados_k · [t_kj ≤ T]
   2) para cada origen i:   A_i = Σ_j R_j · [t_ij ≤ T]          (puestos por competidor)
-Los competidores (parados) se desplazan siempre en transporte público; el modo del usuario
-(transporte público o coche) solo cambia su propio conjunto de destinos alcanzables.
+Cada modo tiene su propio 2SFCA: quien busca empleo en transporte público compite con parados
+que también se desplazan en transporte público, y quien tiene coche con parados que también lo
+tienen. Así la media de A_i ponderada por parados es la ratio regional en ambos modos
+(propiedad de conservación del 2SFCA) y la ventaja del coche se ve en puestos_alcanzables.
 """
 import numpy as np
 import pandas as pd
@@ -41,13 +43,12 @@ def calcular(tiempos, puestos, parados, serie_puestos, municipios):
             U = _vector(parados, ids, s, "parados")
         ratio_regional = P.sum() / U.sum()
         for T in UMBRALES_T:
-            Mtp = T_mat["tp"] <= T
-            D = U @ Mtp                         # competidores que llegan a cada destino j
-            R = P / np.maximum(D, 1.0)
-            for j, ine in enumerate(ids):
-                filas_d.append((ine, s, T, P[j], D[j], R[j]))
             for modo, tm in T_mat.items():
                 M = tm <= T
+                D = U @ M                           # competidores que llegan a cada destino j
+                R = P / np.maximum(D, 1.0)
+                for j, ine in enumerate(ids):
+                    filas_d.append((ine, s, T, modo, P[j], D[j], R[j]))
                 alc = M @ P
                 A = M @ R
                 alc0 = M @ P0
@@ -60,9 +61,10 @@ def calcular(tiempos, puestos, parados, serie_puestos, municipios):
                                          "municipios_alcanzables"])
     ind["tendencia"] = np.select([ind["var_interanual"] > 0.02, ind["var_interanual"] < -0.02],
                                  ["sube", "baja"], "estable")
+    ind.loc[ind["var_interanual"].isna(), "tendencia"] = "sin datos"
     ind = ind.round({"puestos_alcanzables": 0, "competidores": 0, "puestos_por_competidor": 3,
                      "indice_relativo": 3, "var_interanual": 4})
-    dest = pd.DataFrame(filas_d, columns=["ine", "sector", "T", "puestos", "competidores_que_llegan",
+    dest = pd.DataFrame(filas_d, columns=["ine", "sector", "T", "modo", "puestos", "competidores_que_llegan",
                                           "puestos_por_competidor_destino"])
     dest = dest.round({"puestos": 0, "competidores_que_llegan": 0, "puestos_por_competidor_destino": 3})
     return ind, dest

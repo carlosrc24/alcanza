@@ -175,7 +175,8 @@ def vista_ciudadania():
 
         # mapa: destinos alcanzables coloreados por puestos por demandante del destino
         t = R.tiempos_desde(D, ss.ine, res["modo"])
-        dd = D["dest"][(D["dest"]["sector"] == directo.sector) & (D["dest"]["T"] == res["T"])].set_index("ine")
+        dd = D["dest"][(D["dest"]["sector"] == directo.sector) & (D["dest"]["T"] == res["T"])
+                       & (D["dest"]["modo"] == res["modo"])].set_index("ine")
         alc = t[t <= T].index
         vals = dd.loc[dd.index.intersection(alc), "puestos_por_competidor_destino"]
         lo, hi = (vals.quantile(.1), vals.quantile(.9)) if len(vals) else (0, 1)
@@ -265,8 +266,8 @@ def vista_ciudadania():
     st.markdown("")
     st.markdown(
         f'<span class="alc-note">No existen datos abiertos de ofertas de empleo: la demanda se aproxima con los '
-        f'puestos existentes (afiliación por centro de trabajo, 31-12-{int(D["dest"]["T"].iloc[0] * 0 + 2025)}), '
-        f'su tendencia y el paro registrado (31-03-2026). <span class="alc-est">estimado</span> el reparto del paro '
+        f'puestos existentes (afiliación por centro de trabajo, 31-12-{int(D["bal"]["anio_puestos"].iloc[0])}), '
+        f'su tendencia y el paro registrado (31-03-{int(D["par"]["anio"].iloc[0])}). <span class="alc-est">estimado</span> el reparto del paro '
         f'de «Servicios» entre ramas de servicios. Tiempos: {D["metodo_tp"]}. Detalle en «Datos y método».</span>',
         unsafe_allow_html=True)
 
@@ -351,10 +352,10 @@ def vista_planificacion():
             tt2[k, j] = max(tt[k, j] - ahorro, 5)
             tt2[j, k] = max(tt[j, k] - ahorro, 5)
     if sec == "TOT":
-        P = D["dest"][(D["dest"]["sector"] == "TOT") & (D["dest"]["T"] == T)].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
+        P = D["dest"][(D["dest"]["sector"] == "TOT") & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
         U = D["par"].groupby("ine")["parados"].sum().reindex(ids).fillna(0).to_numpy()
     else:
-        P = D["dest"][(D["dest"]["sector"] == sec) & (D["dest"]["T"] == T)].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
+        P = D["dest"][(D["dest"]["sector"] == sec) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
         U = D["par"][D["par"]["sector"] == sec].set_index("ine")["parados"].reindex(ids).fillna(0).to_numpy()
     A0 = accesibilidad(tt <= T, tt <= T, P, U)
     A1 = accesibilidad(tt2 <= T, tt2 <= T, P, U)
@@ -375,8 +376,9 @@ def vista_datos():
 
 **Indicador principal — puestos por demandante (2SFCA, Shen 1998).** Para cada municipio de destino *j*:
 `R_j = puestos_j / Σ_k parados_k · [t_kj ≤ T]`; para cada municipio de origen *i*: `A_i = Σ_j R_j · [t_ij ≤ T]`.
-Los parados compiten desplazándose en transporte público. *Índice relativo* = `A_i` dividido entre la media regional
-(puestos del sector / parados del sector).
+Cada modo tiene su propio cálculo: en transporte público se compite con parados que se mueven en transporte
+público; con coche, con parados que también tienen coche. *Índice relativo* = `A_i` dividido entre la ratio regional
+(puestos del sector / parados del sector); su media ponderada por parados es exactamente 1 (comprobado).
 
 **Unidad territorial:** los 179 municipios; origen y destino = punto central de las paradas de transporte
 del municipio. Dentro del propio municipio se supone un viaje de 10 min (simplificación declarada; afecta sobre todo a

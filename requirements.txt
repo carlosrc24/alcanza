@@ -7,3 +7,4 @@ streamlit>=1.38
 pydeck>=0.9
 r5py>=0.1
 networkx>=3.2
+pytest>=8

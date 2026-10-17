@@ -1,13 +1,5 @@
 [
   {
-    "clave": "afiliados_cc_mensual",
-    "id": "afiliados_seg_social_ultimo_dia_mes_cc_municipio",
-    "titulo": "Afiliados a la Seguridad Social en alta laboral a último día de mes según cuentas de cotización, por municipio. Comunidad de Madrid",
-    "url": "https://datos.comunidad.madrid/dataset/226f7419-0565-4acf-accf-8b727b90d983/resource/ea99fe70-cf51-4c58-93ca-aeec70efe198/download/extraccionesafiliados-a-la-seguridad-social-en-alta-laboral-a-ultimo-dia-de-mes-segun-cuentas-de.csv",
-    "descargado": "2026-10-17",
-    "modificado_catalogo": "2026-09-04T16:42:38.208170"
-  },
-  {
     "clave": "afiliados_residencia_rama",
     "id": "afiliados_por_residencia_y_rama",
     "titulo": "Afiliados a la Seguridad Social por lugar de residencia y rama de actividad. Municipios",
@@ -30,14 +22,6 @@
     "url": "https://datos.comunidad.madrid/dataset/b8cdb7f7-3185-4938-800a-fefda72333f5/resource/0d815439-396e-4975-983e-5bb421f617a0/download/atencion_social_registro_centros.csv",
     "descargado": "2026-10-17",
     "modificado_catalogo": "2026-10-15T05:07:54.801521"
-  },
-  {
-    "clave": "contratos",
-    "id": "contratos_trabajo_municipio",
-    "titulo": "Movimiento Laboral Registrado. Contratos de trabajo, por municipio. Comunidad de Madrid",
-    "url": "https://datos.comunidad.madrid/dataset/19900d46-e62b-4ab1-a65e-ea0fb83bfdcb/resource/8b41acdd-cb88-404d-8767-e99b2cecc431/download/extraccionesmovimiento-laboral-registrado.-contratos-de-trabajo-por-municipio.-comunidad-de-madr.csv",
-    "descargado": "2026-10-17",
-    "modificado_catalogo": "2026-10-16T16:41:41.847358"
   },
   {
     "clave": "limites",
