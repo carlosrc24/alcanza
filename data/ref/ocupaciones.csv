@@ -1,0 +1,27 @@
+id,ocupacion,sector,cno11,saltos_cortos,salto_formacion,formacion_requerida,duracion_formacion
+dependiente,Dependiente/a de comercio,DIS,5220,cajero|recepcionista|teleoperador,administrativo_contable,Certificado de profesionalidad o FP Grado Medio en Gestión Administrativa,9 a 24 meses
+cajero,Cajero/a o reponedor/a,DIS,5500,dependiente|mozo_almacen|teleoperador,aux_admin,Certificado de profesionalidad de Operaciones auxiliares de servicios administrativos,4 a 6 meses
+camarero,Camarero/a,DIS,5120,cocinero|recepcionista|dependiente,recepcionista_hotel,Certificado de profesionalidad de Recepción en alojamientos,6 a 8 meses
+cocinero,Ayudante de cocina,DIS,9310,camarero|cajero|limpieza,cocinero_prof,FP Grado Medio en Cocina y Gastronomía o certificado de profesionalidad,6 a 24 meses
+recepcionista,Recepcionista o atención al cliente,DIS,4422,teleoperador|aux_admin|dependiente,administrativo_contable,FP Grado Medio en Gestión Administrativa,24 meses
+recepcionista_hotel,Recepcionista de hotel,DIS,4412,recepcionista|camarero|teleoperador,administrativo_contable,FP Grado Superior en Gestión de Alojamientos Turísticos,24 meses
+cocinero_prof,Cocinero/a,DIS,5110,cocinero|camarero,mozo_almacen,Sin formación adicional,0
+mozo_almacen,Mozo/a de almacén o logística,DIS,9811,repartidor|operario_industria|cajero,carretillero,Certificado de profesionalidad de Actividades auxiliares de almacén + carné de carretillero,1 a 3 meses
+carretillero,Carretillero/a u operador/a logístico,DIS,8333,mozo_almacen|repartidor|operario_industria,conductor,Permiso C y CAP (conducción profesional),3 a 6 meses
+repartidor,Repartidor/a,DIS,8420,mozo_almacen|conductor|cajero,conductor,Permiso C o D y CAP (conducción profesional),3 a 6 meses
+conductor,Conductor/a profesional (autobús o camión),DIS,8430,repartidor|carretillero,mecanico,FP Grado Medio en Electromecánica de Vehículos,24 meses
+mecanico,Mecánico/a de vehículos,DIS,7401,operario_industria|electricista,electricista,FP Grado Medio en Instalaciones Eléctricas,24 meses
+aux_admin,Auxiliar administrativo/a,EMP,4309,recepcionista|teleoperador|dependiente,administrativo_contable,FP Grado Medio en Gestión Administrativa o certificado de Actividades de gestión administrativa,6 a 24 meses
+administrativo_contable,Administrativo/a contable,EMP,3403,aux_admin|teleoperador,programador,FP Grado Superior en Desarrollo de Aplicaciones o certificado de profesionalidad de Programación,6 a 24 meses
+teleoperador,Teleoperador/a,EMP,4424,recepcionista|aux_admin|dependiente,aux_admin,Certificado de profesionalidad de Operaciones auxiliares de servicios administrativos,4 a 6 meses
+limpieza,Limpiador/a,EMP,9210,cocinero|cuidador|mozo_almacen,cuidador,Certificado de profesionalidad de Atención sociosanitaria a personas en el domicilio,4 a 6 meses
+vigilante,Vigilante de seguridad,EMP,5941,recepcionista|conductor|mozo_almacen,electricista,FP Grado Medio en Instalaciones de Telecomunicaciones o Eléctricas,24 meses
+programador,Técnico/a informático/a o programador/a,EMP,3820,administrativo_contable|teleoperador,programador,Sin formación adicional,0
+cuidador,Cuidador/a de personas dependientes,OTR,5710,limpieza|aux_enfermeria|educador_infantil,aux_enfermeria,FP Grado Medio en Cuidados Auxiliares de Enfermería,14 a 24 meses
+aux_enfermeria,Técnico/a en cuidados auxiliares de enfermería,OTR,5611,cuidador|educador_infantil,administrativo_contable,FP Grado Superior en Documentación y Administración Sanitarias,24 meses
+educador_infantil,Técnico/a en educación infantil,OTR,5811,cuidador|aux_enfermeria,aux_enfermeria,FP Grado Medio en Cuidados Auxiliares de Enfermería,14 a 24 meses
+peluquero,Peluquero/a o esteticista,OTR,5812,dependiente|recepcionista|cuidador,educador_infantil,FP Grado Superior en Educación Infantil,24 meses
+operario_industria,Operario/a de producción industrial,IND,9700,mozo_almacen|carretillero|mecanico,electricista,FP Grado Medio en Instalaciones Eléctricas o certificado de Montaje y mantenimiento,6 a 24 meses
+electricista,Electricista o técnico/a de mantenimiento,CON,7510,operario_industria|mecanico|albanil,programador,FP Grado Superior en Automatización y Robótica Industrial,24 meses
+albanil,Albañil o peón de construcción,CON,7121,operario_industria|mozo_almacen|jardinero,electricista,Certificado de profesionalidad de Montaje y mantenimiento de instalaciones eléctricas,6 a 9 meses
+jardinero,Jardinero/a o peón agrícola,AGR,6120,albanil|mozo_almacen|limpieza,operario_industria,Certificado de profesionalidad de Operaciones auxiliares de fabricación mecánica,4 a 6 meses

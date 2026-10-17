@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+data/raw/*
+!data/raw/.gitkeep
+*.osm.pbf
+.env
+.DS_Store
+data/interim/
+.streamlit/secrets.toml
+alcanza-kit.zip

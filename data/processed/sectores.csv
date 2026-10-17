@@ -1,0 +1,8 @@
+sector,nombre_sector
+AGR,Agricultura y ganadería
+IND,Industria y energía
+CON,Construcción
+DIS,"Comercio, transporte y hostelería"
+EMP,"Servicios a empresas, financieros e inmobiliarios"
+OTR,"Otros servicios (educación, sanidad, administración, personales)"
+TOT,Todos los sectores

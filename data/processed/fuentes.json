@@ -1,0 +1,82 @@
+[
+  {
+    "clave": "afiliados_cc_mensual",
+    "id": "afiliados_seg_social_ultimo_dia_mes_cc_municipio",
+    "titulo": "Afiliados a la Seguridad Social en alta laboral a último día de mes según cuentas de cotización, por municipio. Comunidad de Madrid",
+    "url": "https://datos.comunidad.madrid/dataset/226f7419-0565-4acf-accf-8b727b90d983/resource/ea99fe70-cf51-4c58-93ca-aeec70efe198/download/extraccionesafiliados-a-la-seguridad-social-en-alta-laboral-a-ultimo-dia-de-mes-segun-cuentas-de.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-09-04T16:42:38.208170"
+  },
+  {
+    "clave": "afiliados_residencia_rama",
+    "id": "afiliados_por_residencia_y_rama",
+    "titulo": "Afiliados a la Seguridad Social por lugar de residencia y rama de actividad. Municipios",
+    "url": "https://datos.comunidad.madrid/dataset/9040e138-5add-4113-b585-19655eb73457/resource/7198bd4a-adf3-4d4e-a79e-158dc7c29b45/download/afiliados-a-la-seguridad-social-por-lugar-de-residencia-y-rama-de-actividad.-municipios.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-04-02T05:47:41.031291"
+  },
+  {
+    "clave": "centros_educativos",
+    "id": "centros_educativos",
+    "titulo": "Centros educativos de la comunidad de Madrid",
+    "url": "https://datos.comunidad.madrid/dataset/c750856d-3166-4dac-8e80-d1b824c968b5/resource/28d60557-1d73-4281-ab08-6cfd3b2f5f83/download/centros_educativos.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-05-05T10:27:22.097107"
+  },
+  {
+    "clave": "centros_sociales",
+    "id": "atencion_social_registro_centros",
+    "titulo": "Registro de centros de atención social",
+    "url": "https://datos.comunidad.madrid/dataset/b8cdb7f7-3185-4938-800a-fefda72333f5/resource/0d815439-396e-4975-983e-5bb421f617a0/download/atencion_social_registro_centros.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-10-15T05:07:54.801521"
+  },
+  {
+    "clave": "contratos",
+    "id": "contratos_trabajo_municipio",
+    "titulo": "Movimiento Laboral Registrado. Contratos de trabajo, por municipio. Comunidad de Madrid",
+    "url": "https://datos.comunidad.madrid/dataset/19900d46-e62b-4ab1-a65e-ea0fb83bfdcb/resource/8b41acdd-cb88-404d-8767-e99b2cecc431/download/extraccionesmovimiento-laboral-registrado.-contratos-de-trabajo-por-municipio.-comunidad-de-madr.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-10-16T16:41:41.847358"
+  },
+  {
+    "clave": "limites",
+    "id": "covid19_tia_muni_y_distritos",
+    "titulo": "Covid 19 -TIA por Municipios y Distritos de Madrid",
+    "url": "https://datos.comunidad.madrid/dataset/6c63b14c-9f5d-414f-958f-b8a9c53d69fc/resource/3f4435b7-ecdb-4c1e-961a-dd55506c2e10/download/municipios_y_distritos_madrid_20.zip",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2024-06-03T11:15:13.539992"
+  },
+  {
+    "clave": "padron",
+    "id": "padron_por_sexo",
+    "titulo": "Población empadronada por sexo. Municipios",
+    "url": "https://datos.comunidad.madrid/dataset/bf0b4159-21f8-42fa-835c-d0dc6bc5fadf/resource/bc69f395-1f96-4fc2-a115-025c55b905ad/download/poblacion-empadronada-por-sexo.-municipios.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-10-08T16:26:34.269112"
+  },
+  {
+    "clave": "paro_sector",
+    "id": "paro_por_nacionalidad_sector_y_sexo_09",
+    "titulo": "Paro registrado en las oficinas de empleo por nacionalidad, sector de actividad y sexo CNAE 09. Municipios",
+    "url": "https://datos.comunidad.madrid/dataset/8109be5a-4698-43da-aa56-4f93af09dd5e/resource/0858e9d5-726f-4587-b934-5efb6a3b5409/download/paro-registrado-en-las-oficinas-de-empleo-por-nacionalidad-sector-de-actividad-y-sexo-cnae-09.-m.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-09-03T16:27:09.039940"
+  },
+  {
+    "clave": "puestos_ubicacion_rama",
+    "id": "afiliados_por_ubicacion_y_rama",
+    "titulo": "Trabajadores afiliados en alta laboral a la Seguridad Social por ubicación del centro de trabajo y rama de actividad. Municipios",
+    "url": "https://datos.comunidad.madrid/dataset/295b282b-2848-47d8-a9b5-299181108cee/resource/21e8facc-98a8-43c7-a177-9746860c2498/download/trabajadores-afiliados-en-alta-laboral-a-la-seguridad-social-por-ubicacion-del-centro-de-trabajo.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-01-22T06:31:42.805859"
+  },
+  {
+    "clave": "salario_ocupacion",
+    "id": "ganancia_media_hogares_por_ocupacion_y_sexo",
+    "titulo": "Recursos económicos de los hogares. Estructura salarial cuatrienal. Ganancia media anual por trabajador por ocupación y sexo",
+    "url": "https://datos.comunidad.madrid/dataset/8908ec1a-2e0c-479d-a4ee-4a1799aa9138/resource/8052258d-b13f-44bb-b758-ce4b97a6fde0/download/recursos-economicos-de-los-hogares.-estructura-salarial-cuatrienal.-ganancia-media-anual-por-tra.csv",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": "2026-05-18T16:32:22.931476"
+  }
+]
