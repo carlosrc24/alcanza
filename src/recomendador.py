@@ -75,6 +75,7 @@ class Tarjeta:
     destinos: pd.DataFrame
     por_que: str
     formacion: str = ""
+    resumen: str = ""
     centros_formacion: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
@@ -180,6 +181,34 @@ def explicar(D, tipo, ocu_row, ine, T, modo, fila, dest, hijo):
     return " ".join(partes)
 
 
+def resumir(D, t, base, yo) -> str:
+    """Frase corta y específica de cada camino, comparada con la ocupación actual."""
+    i, b = t.indicadores, base.indicadores
+    ppc = _fmt(i["puestos_por_competidor"], 1)
+    d0 = t.destinos.iloc[0]["nombre"] if len(t.destinos) else None
+    if t.tipo == "directo":
+        txt = f"{_fmt(i['puestos_alcanzables'])} puestos de tu sector a tu alcance, {ppc} por cada demandante."
+        return txt + (f" Donde mejor: {d0}." if d0 else "")
+    sal_t = salario(D, D["ocu"].set_index("id").loc[t.ocupacion_id, "cno11"])
+    sal_b = salario(D, yo["cno11"])
+    dif_sal = (sal_t - sal_b) if sal_t and sal_b else 0
+    if t.tipo == "salto_corto":
+        mejor = i["puestos_por_competidor"] / max(b["puestos_por_competidor"], 1e-9)
+        txt = (f"Usa casi todo lo que ya sabes y no pide formación. {ppc} puestos por demandante"
+               + (f" (×{_fmt(mejor, 1)} que en tu ocupación)." if t.sector != base.sector else "."))
+        return txt + (f" Donde mejor: {d0}." if d0 else "")
+    txt = f"Tras formarte ({t.formacion.split(' o ')[0]}, {yo['duracion_formacion']})"
+    if dif_sal > 500:
+        txt += f" el salario medio de referencia sube unos {_fmt(dif_sal / 1000, 1)} k€/año."
+    else:
+        txt += f" accedes a {_fmt(i['puestos_alcanzables'])} puestos con {ppc} por demandante."
+    n = len(t.centros_formacion)
+    if n:
+        c0 = t.centros_formacion.iloc[0]
+        txt += f" Centro de formación más cercano: {c0['municipio']} ({int(c0['minutos'])} min)."
+    return txt
+
+
 def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=45, pesos=None):
     pesos = {**PESOS_DEFECTO, **(pesos or {})}
     T = snap_T(T)
@@ -200,6 +229,7 @@ def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=
         return t
 
     tarjetas.append(hacer("directo", ocupacion_id))
+    base = tarjetas[0]
     cortos = [hacer("salto_corto", o) for o in str(yo["saltos_cortos"]).split("|") if o in ocu.index]
     if cortos:
         tarjetas.append(max(cortos, key=lambda t: t.puntuacion))
@@ -208,6 +238,8 @@ def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=
         t.formacion = yo["formacion_requerida"]
         t.centros_formacion = centros_cercanos(D, ine, modo, TIPOS_FORMACION)
         tarjetas.append(t)
+    for t in tarjetas:
+        t.resumen = resumir(D, t, base, yo)
     return {"T": T, "modo": modo, "tarjetas": tarjetas, "alternativas_cortas": cortos,
             "formacion_activa": formacion}
 

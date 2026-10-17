@@ -233,10 +233,11 @@ def vista_ciudadania():
               <div class="titulo">{tj.ocupacion}</div>
               <div class="lugar">{lugar}</div>
               <div class="chips">{''.join(f'<span>{c}</span>' for c in chips if c)}</div>
-              <div class="porque">{tj.por_que}</div></div>""", unsafe_allow_html=True)
+              <div class="porque">{tj.resumen}</div></div>""", unsafe_allow_html=True)
             if bloqueada:
                 st.caption("Activa «Dispuesta/o a formarme» para valorar este camino.")
             with st.expander("Por qué y cómo"):
+                st.markdown(tj.por_que)
                 contrib = pd.DataFrame({"criterio": [R.ETIQUETAS[k] for k in tj.contribuciones],
                                         "aporte": [v * 100 for v in tj.contribuciones.values()]})
                 st.bar_chart(contrib.set_index("criterio"), horizontal=True, height=210, color="#0f766e")
