@@ -16,7 +16,7 @@ from .config import PROCESSED, RAW
 def main(recalcular_tiempos=False, plan_c=False):
     PROCESSED.mkdir(parents=True, exist_ok=True)
     print("1/6 Descarga")
-    download.main(gtfs=not plan_c)
+    download.main(tiempos=recalcular_tiempos and not plan_c)
 
     print("2/6 Municipios")
     mun, geo = datos.construir_municipios()

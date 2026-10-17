@@ -387,9 +387,11 @@ público; con coche, con parados que también tienen coche. *Índice relativo* =
 del municipio. Dentro del propio municipio se supone un viaje de 10 min (simplificación declarada; afecta sobre todo a
 Madrid capital).
 
-**Tiempos:** r5py (motor R5) con los GTFS del Consorcio (Metro, Metro Ligero, EMT, interurbanos, urbanos) y de
-Renfe Cercanías (el GTFS de Cercanías del Consorcio no trae horarios) sobre la red peatonal de OpenStreetMap.
-Mediana de las salidas entre 7:00 y 9:00 de un martes laborable. Coche: distancia × 1,3 a 30–55 km/h (aproximado).
+**Tiempos en transporte público (versión actual: {metodo}).** Plan A: r5py (motor R5) con los GTFS del
+Consorcio (Metro, Metro Ligero, EMT, interurbanos, urbanos) y de Renfe Cercanías (el GTFS de Cercanías del
+Consorcio no trae horarios) sobre la red peatonal de OpenStreetMap; mediana de las salidas entre 7:00 y 9:00 de un
+martes laborable. Plan C (respaldo): 15 min de acceso y espera + distancia × 1,3 a 25 km/h. Coche: distancia × 1,3
+a 30–55 km/h + 5 min (aproximado).
 
 **Sectores:** el paro registrado por municipio solo distingue agricultura, industria, construcción y servicios.
 Servicios se reparte entre tres ramas con la estructura de afiliados residentes del propio municipio
@@ -398,7 +400,7 @@ Servicios se reparte entre tres ramas con la estructura de afiliados residentes 
 **Límites declarados:** no hay ofertas de empleo abiertas por municipio; la afiliación está redondeada a múltiplos
 de 5; el salario es regional por gran grupo de ocupación (Encuesta de Estructura Salarial, cuatrienal); la tabla de
 ocupaciones y sus saltos es una correspondencia hecha a mano.
-""")
+""".replace("{metodo}", D["metodo_tp"]))
     st.markdown("#### Fuentes descargadas")
     f = pd.DataFrame(D["fuentes"])[["titulo", "descargado", "modificado_catalogo", "url"]]
     st.dataframe(f, hide_index=True, column_config={"url": st.column_config.LinkColumn("Enlace")})

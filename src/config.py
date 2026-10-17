@@ -41,6 +41,19 @@ GTFS = {
 }
 GTFS_URL = "https://crtm.maps.arcgis.com/sharing/rest/content/items/{}/data"
 
+# Fuentes complementarias (no están en el catálogo de la Comunidad):
+EXTERNAS = {
+    # El GTFS de Cercanías del CRTM no trae horarios: se usa el de Renfe (toda España; se filtra
+    # al núcleo de Madrid en src/gtfs.py)
+    "gtfs_renfe_cercanias": {"url": "https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip",
+                             "ext": "zip", "titulo": "Horarios de Cercanías (GTFS) — Renfe Operadora",
+                             "solo_tiempos": False},
+    # Red peatonal para r5py
+    "osm_madrid": {"url": "https://download.geofabrik.de/europe/spain/madrid-latest.osm.pbf",
+                   "ext": "osm.pbf", "titulo": "OpenStreetMap — extracto Comunidad de Madrid (Geofabrik)",
+                   "solo_tiempos": True},
+}
+
 # --- Sectores -------------------------------------------------------------------
 # Paro solo trae 4 grandes sectores; los puestos traen 7 ramas. Sector común del modelo:
 # las ramas de servicios se separan y el paro de «Servicios» se reparte entre ellas con la

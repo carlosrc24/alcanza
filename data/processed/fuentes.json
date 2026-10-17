@@ -24,12 +24,76 @@
     "modificado_catalogo": "2026-10-15T05:07:54.801521"
   },
   {
+    "clave": "gtfs_cercanias",
+    "id": "1a25440bf66f499bae2657ec7fb40144",
+    "titulo": "GTFS cercanias — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/1a25440bf66f499bae2657ec7fb40144/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_emt",
+    "id": "868df0e58fca47e79b942902dffd7da0",
+    "titulo": "GTFS emt — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/868df0e58fca47e79b942902dffd7da0/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_interurbanos",
+    "id": "885399f83408473c8d815e40c5e702b7",
+    "titulo": "GTFS interurbanos — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/885399f83408473c8d815e40c5e702b7/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_metro",
+    "id": "5c7f2951962540d69ffe8f640d94c246",
+    "titulo": "GTFS metro — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/5c7f2951962540d69ffe8f640d94c246/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_metro_ligero",
+    "id": "aaed26cc0ff64b0c947ac0bc3e033196",
+    "titulo": "GTFS metro_ligero — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/aaed26cc0ff64b0c947ac0bc3e033196/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_renfe_cercanias",
+    "id": "",
+    "titulo": "Horarios de Cercanías (GTFS) — Renfe Operadora",
+    "url": "https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
+    "clave": "gtfs_urbanos_resto",
+    "id": "357e63c2904f43aeb5d8a267a64346d8",
+    "titulo": "GTFS urbanos_resto — Consorcio Regional de Transportes de Madrid",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/357e63c2904f43aeb5d8a267a64346d8/data",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
+  },
+  {
     "clave": "limites",
     "id": "covid19_tia_muni_y_distritos",
     "titulo": "Covid 19 -TIA por Municipios y Distritos de Madrid",
     "url": "https://datos.comunidad.madrid/dataset/6c63b14c-9f5d-414f-958f-b8a9c53d69fc/resource/3f4435b7-ecdb-4c1e-961a-dd55506c2e10/download/municipios_y_distritos_madrid_20.zip",
     "descargado": "2026-10-17",
     "modificado_catalogo": "2024-06-03T11:15:13.539992"
+  },
+  {
+    "clave": "osm_madrid",
+    "id": "",
+    "titulo": "OpenStreetMap — extracto Comunidad de Madrid (Geofabrik)",
+    "url": "https://download.geofabrik.de/europe/spain/madrid-latest.osm.pbf",
+    "descargado": "2026-10-17",
+    "modificado_catalogo": null
   },
   {
     "clave": "padron",

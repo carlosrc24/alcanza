@@ -11,6 +11,7 @@
 import argparse
 import datetime as dt
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -66,13 +67,18 @@ def tiempos_r5py(m: pd.DataFrame, origenes=None, max_memory="8G", tanda=20) -> p
     red = r5py.TransportNetwork(osm, feeds, allow_errors=True)
     pts = gpd.GeoDataFrame({"id": m["ine"]}, geometry=gpd.points_from_xy(m["lon"], m["lat"]), crs=4326)
     orig = pts if origenes is None else pts[pts["id"].isin(origenes)]
-    carpeta = INTERIM / "tiempos_r5py"
+    # las tandas guardadas solo valen para estas mismas entradas (GTFS, OSM y orígenes)
+    import hashlib
+    firma = hashlib.md5("|".join([f"{p}:{Path(p).stat().st_size}:{Path(p).stat().st_mtime}" for p in feeds + [osm]]
+                                 + list(orig["id"]) + [str(FECHA_OBJETIVO)]).encode()).hexdigest()[:10]
+    carpeta = INTERIM / f"tiempos_r5py_{firma}"
     carpeta.mkdir(parents=True, exist_ok=True)
     partes = []
     for k in range(0, len(orig), tanda):
         f = carpeta / f"tanda_{k:03d}_{len(orig)}.csv"
         if not f.exists():
-            print(f"  r5py: orígenes {k + 1}-{min(k + tanda, len(orig))} de {len(orig)}", flush=True)
+            print(f"  r5py [{dt.datetime.now():%H:%M:%S}]: orígenes {k + 1}-{min(k + tanda, len(orig))} "
+                  f"de {len(orig)}", flush=True)
             _matriz_r5py(r5py, red, orig.iloc[k:k + tanda], pts).to_csv(f, index=False)
         partes.append(pd.read_csv(f, dtype={"origen": str, "destino": str}))
     return pd.concat(partes, ignore_index=True)

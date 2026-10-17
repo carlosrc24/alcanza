@@ -42,7 +42,8 @@ Convenciones comunes:
 
 Fuentes: «Población empadronada por sexo. Municipios»; límites «Municipios y Distritos de
 Madrid (2020)» (recurso SHP del conjunto «Covid 19 - TIA por Municipios y Distritos de
-Madrid»; los 21 distritos de Madrid se disuelven en 28079); paradas de los GTFS.
+Madrid»; los 21 distritos de Madrid se disuelven en 28079); paradas de los GTFS del Consorcio
+y de Renfe Cercanías.
 `municipios.geojson`: mismos polígonos simplificados (WGS84) para el mapa.
 
 ## `puestos_municipio_sector.csv` — 179 × 6 filas
@@ -104,7 +105,11 @@ residencia y rama de actividad. Municipios» del propio municipio.
 | accesible_tp | bool | hay conexión en ≤ 180 min |
 | metodo_tp | — | `r5py_gtfs_osm_p50_7a9h` (plan A) o `plan_c_aproximado` (respaldo) |
 
-Viajes dentro del propio municipio: 10 min por convención (simplificación declarada, afecta
+**Comprobad la columna `metodo_tp`.** Con el plan A los tiempos salen de horarios reales. Con el
+plan C (respaldo, sin r5py) se aproximan como 15 min de acceso y espera más la distancia
+(× 1,3) a 25 km/h si los dos municipios tienen paradas, o a 15 km/h si no las tienen.
+
+Plan A — viajes dentro del propio municipio: 10 min por convención (simplificación declarada, afecta
 sobre todo a Madrid capital). Cálculo con r5py (motor R5 de Conveyal) sobre OpenStreetMap
 (extracto Geofabrik «madrid») y los GTFS del Consorcio: Metro, Metro Ligero, EMT, autobuses
 interurbanos y urbanos del resto de municipios. El GTFS de Cercanías publicado por el Consorcio
@@ -124,22 +129,24 @@ fija en un martes laborable propio dentro de su calendario y todos se reasignan 
 | puestos_alcanzables | puestos | Σ_j puestos_j · [t_ij ≤ T] |
 | competidores | personas | competidores efectivos = puestos_alcanzables / puestos_por_competidor |
 | puestos_por_competidor | puestos/parado | **indicador principal** (2SFCA, Shen 1998): A_i = Σ_j R_j · [t_ij ≤ T], con R_j = puestos_j / Σ_k parados_k · [t_kj ≤ T] |
-| indice_relativo | ratio | A_i / (puestos del sector / parados del sector en la región); 1 = media regional |
+| indice_relativo | ratio | A_i / (puestos del sector / parados del sector en la región); 1 = media regional. Su media ponderada por parados es 1 en cada sector, T y modo (propiedad de conservación del 2SFCA, verificada en `tests/`) |
 | var_interanual | proporción | variación de puestos_alcanzables entre los dos últimos años |
-| tendencia | — | «sube» (> +2 %), «baja» (< −2 %) o «estable» |
+| tendencia | — | «sube» (> +2 %), «baja» (< −2 %), «estable» o «sin datos» (sin puestos alcanzables el año anterior) |
 | municipios_alcanzables | — | nº de municipios a ≤ T |
 
-Supuesto: los competidores (parados) se desplazan en transporte público; el modo de la persona
-solo cambia sus propios destinos.
+Cada modo tiene su propio 2SFCA. En `tp` se compite con los parados que llegan al destino en
+transporte público, y en `coche` con los que llegan en coche. Así el índice compara a cada
+persona con quienes se desplazan como ella, y la ventaja del coche se ve en
+`puestos_alcanzables` y `municipios_alcanzables`.
 
-## `oportunidad_destino.csv` — 179 × 7 × 6 filas
+## `oportunidad_destino.csv` — 179 × 7 sectores × 6 umbrales × 2 modos
 
 | Columna | Unidad | Descripción |
 |---|---|---|
 | ine | — | municipio de **destino** |
-| sector, T | — | sector y umbral |
+| sector, T, modo | — | sector, umbral y modo (`tp` o `coche`) |
 | puestos | puestos | puestos del sector en el destino |
-| competidores_que_llegan | personas | Σ_k parados_k · [t_kj ≤ T] en transporte público |
+| competidores_que_llegan | personas | Σ_k parados_k · [t_kj ≤ T] con los tiempos del modo |
 | puestos_por_competidor_destino | ratio | R_j (primer paso del 2SFCA) |
 
 ## `recursos.csv`

@@ -39,7 +39,7 @@ def limites() -> gpd.GeoDataFrame:
 def paradas_gtfs() -> gpd.GeoDataFrame:
     """Todas las paradas de los GTFS del CRTM + Renfe Cercanías (EPSG:25830)."""
     frames = []
-    for z in sorted(RAW.glob("gtfs_*.zip")):
+    for z in sorted(RAW.glob("gtfs_*__*.zip")):
         with zipfile.ZipFile(z) as zf:
             with zf.open("stops.txt") as f:
                 s = pd.read_csv(f, dtype=str, usecols=lambda c: c in {"stop_id", "stop_lat", "stop_lon", "location_type"})

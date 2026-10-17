@@ -1,7 +1,7 @@
 """Descarga de las fuentes a data/raw/ (con fecha). Idempotente: no repite lo ya descargado.
 
     python -m src.download            # todo
-    python -m src.download --sin-gtfs # sin los GTFS (~100 MB)
+    python -m src.download --sin-osm  # sin el OSM (solo hace falta para r5py)
 """
 import argparse
 import datetime as dt
@@ -11,7 +11,7 @@ import json
 import pandas as pd
 import requests
 
-from .config import CKAN, DATASETS, GTFS, GTFS_URL, RAW
+from .config import CKAN, DATASETS, EXTERNAS, GTFS, GTFS_URL, RAW
 
 HOY = dt.date.today().isoformat()
 
@@ -51,6 +51,31 @@ def descargar_dataset(clave: str, forzar: bool = False):
     return destino
 
 
+def _bajar(url, destino):
+    with requests.get(url, stream=True, timeout=900) as r:
+        r.raise_for_status()
+        with open(destino, "wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+
+
+def _meta(clave, titulo, url, ident=""):
+    (RAW / f"{clave}__{HOY}.meta.json").write_text(json.dumps({
+        "clave": clave, "id": ident, "titulo": titulo, "url": url, "descargado": HOY,
+        "modificado_catalogo": None}, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def descargar_externas(tiempos: bool = True):
+    for clave, e in EXTERNAS.items():
+        if e["solo_tiempos"] and not tiempos:
+            continue
+        if _ultimo(clave, e["ext"]):
+            continue
+        print(f"↓ {clave}")
+        _bajar(e["url"], RAW / f"{clave}__{HOY}.{e['ext']}")
+        _meta(clave, e["titulo"], e["url"])
+
+
 def descargar_gtfs(forzar: bool = False):
     out = {}
     for nombre, item in GTFS.items():
@@ -60,11 +85,9 @@ def descargar_gtfs(forzar: bool = False):
             continue
         destino = RAW / f"gtfs_{nombre}__{HOY}.zip"
         print(f"↓ GTFS {nombre}")
-        with requests.get(GTFS_URL.format(item), stream=True, timeout=600) as r:
-            r.raise_for_status()
-            with open(destino, "wb") as f:
-                for chunk in r.iter_content(1 << 20):
-                    f.write(chunk)
+        _bajar(GTFS_URL.format(item), destino)
+        _meta(f"gtfs_{nombre}", f"GTFS {nombre} — Consorcio Regional de Transportes de Madrid",
+              GTFS_URL.format(item), item)
         out[nombre] = destino
     return out
 
@@ -88,15 +111,17 @@ def ruta(clave: str):
     return p
 
 
-def main(gtfs: bool = True):
+def main(tiempos: bool = True):
+    """Los GTFS se descargan siempre (sus paradas definen el núcleo de cada municipio);
+    el OSM solo si se van a calcular tiempos con r5py."""
     RAW.mkdir(parents=True, exist_ok=True)
     for clave in DATASETS:
         descargar_dataset(clave)
-    if gtfs:
-        descargar_gtfs()
+    descargar_gtfs()
+    descargar_externas(tiempos)
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--sin-gtfs", action="store_true")
-    main(gtfs=not ap.parse_args().sin_gtfs)
+    ap.add_argument("--sin-osm", action="store_true")
+    main(tiempos=not ap.parse_args().sin_osm)
