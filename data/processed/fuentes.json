@@ -24,6 +24,14 @@
     "modificado_catalogo": "2026-10-15T05:07:54.801521"
   },
   {
+    "clave": "edm2018_viajes",
+    "id": "",
+    "titulo": "Resultados de la EDM 2018 — Viajes (Consorcio Regional de Transportes)",
+    "url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/6afd4db8175d4902ada0803f08ccf50e/data",
+    "descargado": "2026-10-18",
+    "modificado_catalogo": null
+  },
+  {
     "clave": "gtfs_cercanias",
     "id": "1a25440bf66f499bae2657ec7fb40144",
     "titulo": "GTFS cercanias — Consorcio Regional de Transportes de Madrid",

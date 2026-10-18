@@ -1,0 +1,42 @@
+{
+  "tiempos_vs_edm2018": {
+    "pares": 80,
+    "viajes": 2377,
+    "sesgo_mediano_min": -0.5,
+    "error_medio_abs_min": 10.7,
+    "pct_dentro_15min": 0.725,
+    "spearman": 0.524,
+    "pct_dentro_15min_sin_madrid": 0.789,
+    "pares_sin_madrid": 19
+  },
+  "indicador_vs_tasa_paro": {
+    "30": {
+      "municipios": 103,
+      "spearman_indice_paro": -0.612,
+      "spearman_puestos_paro": -0.361
+    },
+    "45": {
+      "municipios": 103,
+      "spearman_indice_paro": -0.407,
+      "spearman_puestos_paro": -0.271
+    },
+    "60": {
+      "municipios": 103,
+      "spearman_indice_paro": -0.307,
+      "spearman_puestos_paro": -0.382
+    },
+    "75": {
+      "municipios": 103,
+      "spearman_indice_paro": -0.168,
+      "spearman_puestos_paro": -0.357
+    }
+  },
+  "robustez": {
+    "T_referencia": 60,
+    "spearman_umbral_vs_decaimiento": {
+      "gaussiano_d0_45": 0.672,
+      "gaussiano_d0_60": 0.847,
+      "gaussiano_d0_75": 0.823
+    }
+  }
+}

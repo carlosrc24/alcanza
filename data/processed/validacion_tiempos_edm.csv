@@ -1,0 +1,83 @@
+origen,destino,nombre_origen,nombre_destino,min_edm,viajes_edm,min_tp,metodo_tp,diferencia_min,con_madrid
+28005,28079,Alcalá de Henares,Madrid,75,95,38.0,r5py_gtfs_osm_p50_7a9h,-37.0,True
+28005,28148,Alcalá de Henares,Torrejón de Ardoz,30,6,36.0,r5py_gtfs_osm_p50_7a9h,6.0,False
+28006,28079,Alcobendas,Madrid,55,52,62.0,r5py_gtfs_osm_p50_7a9h,7.0,True
+28006,28134,Alcobendas,San Sebastián de los Reyes,30,5,28.0,r5py_gtfs_osm_p50_7a9h,-2.0,False
+28007,28079,Alcorcón,Madrid,55,155,55.0,r5py_gtfs_osm_p50_7a9h,0.0,True
+28007,28092,Alcorcón,Móstoles,30,11,35.0,r5py_gtfs_osm_p50_7a9h,5.0,False
+28007,28115,Alcorcón,Pozuelo de Alarcón,60,5,67.0,r5py_gtfs_osm_p50_7a9h,7.0,False
+28009,28079,Algete,Madrid,65,7,82.0,r5py_gtfs_osm_p50_7a9h,17.0,True
+28010,28079,Alpedrete,Madrid,75,7,48.0,r5py_gtfs_osm_p50_7a9h,-27.0,True
+28013,28079,Aranjuez,Madrid,90,23,74.0,r5py_gtfs_osm_p50_7a9h,-16.0,True
+28014,28079,Arganda del Rey,Madrid,75,22,61.0,r5py_gtfs_osm_p50_7a9h,-14.0,True
+28015,28079,Arroyomolinos,Madrid,60,7,88.0,r5py_gtfs_osm_p50_7a9h,28.0,True
+28018,28079,Becerril de la Sierra,Madrid,90,5,70.0,r5py_gtfs_osm_p50_7a9h,-20.0,True
+28022,28079,Boadilla del Monte,Madrid,60,25,71.0,r5py_gtfs_osm_p50_7a9h,11.0,True
+28040,28079,Ciempozuelos,Madrid,70,13,77.0,r5py_gtfs_osm_p50_7a9h,7.0,True
+28043,28079,Colmenar de Oreja,Madrid,60,6,99.0,estimado_hueco_gtfs,39.0,True
+28045,28079,Colmenar Viejo,Madrid,60,22,72.0,estimado_hueco_gtfs,12.0,True
+28045,28903,Colmenar Viejo,Tres Cantos,30,5,60.0,r5py_gtfs_osm_p50_7a9h,30.0,False
+28047,28079,Collado Villalba,Madrid,60,38,44.0,r5py_gtfs_osm_p50_7a9h,-16.0,True
+28047,28127,Collado Villalba,Rozas de Madrid (Las),30,6,53.0,r5py_gtfs_osm_p50_7a9h,23.0,False
+28049,28079,Coslada,Madrid,45,58,46.0,r5py_gtfs_osm_p50_7a9h,1.0,True
+28054,28079,Escorial (El),Madrid,60,6,60.0,r5py_gtfs_osm_p50_7a9h,0.0,True
+28058,28007,Fuenlabrada,Alcorcón,30,6,43.0,r5py_gtfs_osm_p50_7a9h,13.0,False
+28058,28065,Fuenlabrada,Getafe,30,10,29.0,r5py_gtfs_osm_p50_7a9h,-1.0,False
+28058,28074,Fuenlabrada,Leganés,30,6,34.0,r5py_gtfs_osm_p50_7a9h,4.0,False
+28058,28079,Fuenlabrada,Madrid,60,134,54.0,r5py_gtfs_osm_p50_7a9h,-6.0,True
+28058,28092,Fuenlabrada,Móstoles,30,10,32.0,r5py_gtfs_osm_p50_7a9h,2.0,False
+28058,28115,Fuenlabrada,Pozuelo de Alarcón,75,6,80.0,r5py_gtfs_osm_p50_7a9h,5.0,False
+28061,28079,Galapagar,Madrid,60,24,58.0,r5py_gtfs_osm_p50_7a9h,-2.0,True
+28065,28074,Getafe,Leganés,30,7,35.0,r5py_gtfs_osm_p50_7a9h,5.0,False
+28065,28079,Getafe,Madrid,60,140,49.0,r5py_gtfs_osm_p50_7a9h,-11.0,True
+28065,28106,Getafe,Parla,30,5,43.0,r5py_gtfs_osm_p50_7a9h,13.0,False
+28068,28079,Guadarrama,Madrid,80,14,46.0,r5py_gtfs_osm_p50_7a9h,-34.0,True
+28073,28079,Humanes de Madrid,Madrid,60,8,58.0,r5py_gtfs_osm_p50_7a9h,-2.0,True
+28074,28079,Leganés,Madrid,50,143,52.0,r5py_gtfs_osm_p50_7a9h,2.0,True
+28079,28005,Madrid,Alcalá de Henares,70,13,45.0,r5py_gtfs_osm_p50_7a9h,-25.0,True
+28079,28006,Madrid,Alcobendas,65,64,53.0,r5py_gtfs_osm_p50_7a9h,-12.0,True
+28079,28007,Madrid,Alcorcón,40,24,48.0,r5py_gtfs_osm_p50_7a9h,8.0,True
+28079,28014,Madrid,Arganda del Rey,45,6,60.0,r5py_gtfs_osm_p50_7a9h,15.0,True
+28079,28022,Madrid,Boadilla del Monte,75,19,71.0,r5py_gtfs_osm_p50_7a9h,-4.0,True
+28079,28049,Madrid,Coslada,50,9,43.0,r5py_gtfs_osm_p50_7a9h,-7.0,True
+28079,28058,Madrid,Fuenlabrada,65,18,49.0,r5py_gtfs_osm_p50_7a9h,-16.0,True
+28079,28065,Madrid,Getafe,60,28,43.0,r5py_gtfs_osm_p50_7a9h,-17.0,True
+28079,28074,Madrid,Leganés,50,24,47.0,r5py_gtfs_osm_p50_7a9h,-3.0,True
+28079,28080,Madrid,Majadahonda,70,19,48.0,r5py_gtfs_osm_p50_7a9h,-22.0,True
+28079,28092,Madrid,Móstoles,60,17,55.0,r5py_gtfs_osm_p50_7a9h,-5.0,True
+28079,28106,Madrid,Parla,60,8,58.0,r5py_gtfs_osm_p50_7a9h,-2.0,True
+28079,28113,Madrid,Pinto,60,5,55.0,r5py_gtfs_osm_p50_7a9h,-5.0,True
+28079,28115,Madrid,Pozuelo de Alarcón,60,66,56.0,r5py_gtfs_osm_p50_7a9h,-4.0,True
+28079,28123,Madrid,Rivas-Vaciamadrid,60,11,64.0,r5py_gtfs_osm_p50_7a9h,4.0,True
+28079,28127,Madrid,Rozas de Madrid (Las),70,38,48.0,r5py_gtfs_osm_p50_7a9h,-22.0,True
+28079,28130,Madrid,San Fernando de Henares,55,9,50.0,r5py_gtfs_osm_p50_7a9h,-5.0,True
+28079,28134,Madrid,San Sebastián de los Reyes,70,25,49.0,r5py_gtfs_osm_p50_7a9h,-21.0,True
+28079,28148,Madrid,Torrejón de Ardoz,60,19,47.0,r5py_gtfs_osm_p50_7a9h,-13.0,True
+28079,28903,Madrid,Tres Cantos,60,34,63.0,r5py_gtfs_osm_p50_7a9h,3.0,True
+28080,28079,Majadahonda,Madrid,55,35,51.0,r5py_gtfs_osm_p50_7a9h,-4.0,True
+28084,28079,Mejorada del Campo,Madrid,60,14,66.0,r5py_gtfs_osm_p50_7a9h,6.0,True
+28090,28079,Moralzarzal,Madrid,65,7,67.0,r5py_gtfs_osm_p50_7a9h,2.0,True
+28092,28007,Móstoles,Alcorcón,20,6,35.0,r5py_gtfs_osm_p50_7a9h,15.0,False
+28092,28065,Móstoles,Getafe,55,6,48.0,r5py_gtfs_osm_p50_7a9h,-7.0,False
+28092,28079,Móstoles,Madrid,60,143,62.0,r5py_gtfs_osm_p50_7a9h,2.0,True
+28092,28115,Móstoles,Pozuelo de Alarcón,50,5,73.0,r5py_gtfs_osm_p50_7a9h,23.0,False
+28096,28079,Navalcarnero,Madrid,80,14,85.0,r5py_gtfs_osm_p50_7a9h,5.0,True
+28104,28079,Paracuellos de Jarama,Madrid,60,10,50.0,r5py_gtfs_osm_p50_7a9h,-10.0,True
+28106,28065,Parla,Getafe,20,6,41.0,r5py_gtfs_osm_p50_7a9h,21.0,False
+28106,28079,Parla,Madrid,70,96,62.0,r5py_gtfs_osm_p50_7a9h,-8.0,True
+28113,28079,Pinto,Madrid,60,29,63.0,r5py_gtfs_osm_p50_7a9h,3.0,True
+28115,28079,Pozuelo de Alarcón,Madrid,40,46,57.0,r5py_gtfs_osm_p50_7a9h,17.0,True
+28123,28079,Rivas-Vaciamadrid,Madrid,60,68,65.0,r5py_gtfs_osm_p50_7a9h,5.0,True
+28127,28079,Rozas de Madrid (Las),Madrid,50,63,50.0,r5py_gtfs_osm_p50_7a9h,0.0,True
+28130,28079,San Fernando de Henares,Madrid,55,22,44.0,r5py_gtfs_osm_p50_7a9h,-11.0,True
+28132,28079,San Martín de la Vega,Madrid,70,7,84.0,r5py_gtfs_osm_p50_7a9h,14.0,True
+28134,28006,San Sebastián de los Reyes,Alcobendas,30,5,33.0,r5py_gtfs_osm_p50_7a9h,3.0,False
+28134,28079,San Sebastián de los Reyes,Madrid,60,44,59.0,r5py_gtfs_osm_p50_7a9h,-1.0,True
+28148,28079,Torrejón de Ardoz,Madrid,60,81,35.0,r5py_gtfs_osm_p50_7a9h,-25.0,True
+28152,28079,Torrelodones,Madrid,60,19,49.0,r5py_gtfs_osm_p50_7a9h,-11.0,True
+28161,28065,Valdemoro,Getafe,50,5,51.0,r5py_gtfs_osm_p50_7a9h,1.0,False
+28161,28079,Valdemoro,Madrid,75,58,70.0,r5py_gtfs_osm_p50_7a9h,-5.0,True
+28176,28079,Villanueva de la Cañada,Madrid,90,7,75.0,r5py_gtfs_osm_p50_7a9h,-15.0,True
+28177,28079,Villanueva del Pardillo,Madrid,75,14,46.0,r5py_gtfs_osm_p50_7a9h,-29.0,True
+28181,28079,Villaviciosa de Odón,Madrid,60,11,81.0,r5py_gtfs_osm_p50_7a9h,21.0,True
+28903,28079,Tres Cantos,Madrid,60,36,64.0,r5py_gtfs_osm_p50_7a9h,4.0,True

@@ -39,6 +39,8 @@ python -m src.pipeline --tiempos --plan-c   # tiempos aproximados sin r5py
 | `src/recomendador.py` | perfil → tres tarjetas con puntuación desglosada y «por qué» |
 | `src/texto.py` | texto libre → campos del formulario (determinista; el usuario confirma) |
 | `src/recursos.py` | escuelas infantiles, FP, formación para el empleo, servicios sociales |
+| `src/simulador.py` | simulador «¿y si…?» y ranking de mejoras de transporte (parados que salen de desiertos) |
+| `src/validacion.py` | validación: tiempos frente a la EDM 2018, acceso frente a paro, robustez del 2SFCA |
 | `app/app.py` | prototipo Streamlit: ciudadanía, planificación, datos y método |
 | `data/processed/` | **datasets elaborados** (entregable) — diccionario en su `README.md` |
 | `data/ref/ocupaciones.csv` | ocupaciones, sector, saltos cortos y salto con formación (hecha a mano) |

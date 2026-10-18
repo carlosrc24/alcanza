@@ -73,3 +73,45 @@ def test_caso_lucia(D):
                  "formacion": True, "T": None}
     res = R.recomendar(D, "aux_admin", "28106", hijo=True, T=45)
     assert [t.tipo for t in res["tarjetas"]] == ["directo", "salto_corto", "salto_formacion"]
+
+
+def test_texto_libre(D):
+    from src.texto import interpretar
+    casos = [
+        ("Vivo en Alcalá de Henares, era dependienta. Máximo media hora.", "28005", "dependiente", None, None, 30),
+        ("conductor de reparto, vivo en torrejon, tengo furgoneta", "28148", "conductor", True, None, None),
+        ("Teleoperadora en Valdemoro, dos hijos de 5 y 8 años", "28161", "teleoperador", None, False, None),
+        ("vivo en sanse, soy cocinera, tengo un bebé de 10 meses, hora y media", "28134", "cocinero_prof", None, True, 90),
+        ("Soy de Rivas, vigilante de seguridad, no conduzco, mi hija tiene tres años", "28123", "vigilante",
+         False, True, None),
+        ("mozo de almacén en coslada, coche propio, 40 min", "28049", "mozo_almacen", True, None, 40),
+    ]
+    for texto, ine, ocu, coche, hijo, T in casos:
+        r = interpretar(texto, D["nom"])
+        assert (r["ine"], r["ocupacion"], r["coche"], r["hijo"], r["T"]) == (ine, ocu, coche, hijo, T), texto
+
+
+def test_simulador_y_ranking(D):
+    import numpy as np
+    from src import simulador as S
+    ids, tt, P, U, pob = S.datos_sector(D, "TOT", 60)
+    t2 = S.mejorar(tt, ids, "28106", 10)
+    A0, A1 = S.accesibilidad(tt <= 60, P, U), S.accesibilidad(t2 <= 60, P, U)
+    assert A1[ids.index("28106")] > A0[ids.index("28106")]
+    # conservación: el total repartido no cambia, solo su reparto
+    alc = lambda M: P[(U @ M) > 0].sum()
+    assert np.isclose((U * A0).sum(), alc(tt <= 60), rtol=1e-6)
+    assert np.isclose((U * A1).sum(), alc(t2 <= 60), rtol=1e-6)
+    r = S.ranking(D, "TOT", 60, 10)
+    assert len(r) > 100 and "28079" not in set(r["ine"])
+    assert r["salen_neto"].is_monotonic_decreasing
+    assert r.iloc[0]["salen_neto"] > 0
+
+
+def test_validacion():
+    import json
+    from src.config import PROCESSED
+    V = json.loads((PROCESSED / "validacion.json").read_text(encoding="utf-8"))
+    vt = V["tiempos_vs_edm2018"]
+    assert vt["pares"] >= 50 and abs(vt["sesgo_mediano_min"]) <= 5 and vt["pct_dentro_15min"] >= 0.6
+    assert all(d["spearman_puestos_paro"] < 0 for d in V["indicador_vs_tasa_paro"].values())

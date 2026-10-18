@@ -48,6 +48,12 @@ EXTERNAS = {
     "gtfs_renfe_cercanias": {"url": "https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip",
                              "ext": "zip", "titulo": "Horarios de Cercanías (GTFS) — Renfe Operadora",
                              "solo_tiempos": False},
+    # Validación: microdatos de viajes de la Encuesta Domiciliaria de Movilidad 2018 (conjunto
+    # «Resultados de la EDM 2018» del catálogo de la Comunidad; fichero alojado por el Consorcio)
+    "edm2018_viajes": {"url": "https://crtm.maps.arcgis.com/sharing/rest/content/items/"
+                              "6afd4db8175d4902ada0803f08ccf50e/data",
+                       "ext": "xlsx", "titulo": "Resultados de la EDM 2018 — Viajes (Consorcio Regional de Transportes)",
+                       "solo_tiempos": False},
     # Red peatonal para r5py
     "osm_madrid": {"url": "https://download.geofabrik.de/europe/spain/madrid-latest.osm.pbf",
                    "ext": "osm.pbf", "titulo": "OpenStreetMap — extracto Comunidad de Madrid (Geofabrik)",

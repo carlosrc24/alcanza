@@ -35,10 +35,26 @@ SINONIMOS = {
     "jardinero": ["jardiner", "agricol", "campo"],
 }
 
+# Formas cortas habituales que comparten varios municipios: se resuelven al más poblado
+ALIAS = {
+    "torrejon": "28148", "alcala": "28005", "sanse": "28134", "san sebastian": "28134", "rivas": "28123",
+    "villaviciosa": "28181", "san fernando": "28130", "villalba": "28047", "pozuelo": "28115",
+    "colmenar": "28045", "boadilla": "28022", "arganda": "28014", "el escorial": "28131",
+    "humanes": "28073", "paracuellos": "28104", "mejorada": "28084", "velilla": "28167",
+    "madrid capital": "28079",
+}
+NUMEROS = {"un": 1, "una": 1, "uno": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7,
+           "ocho": 8, "nueve": 9, "diez": 10, "once": 11, "doce": 12}
+_NUM = r"(\d+|" + "|".join(NUMEROS) + r")"
+
 
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFD", s.lower())
-    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return "".join(c for c in s if unicodedata.category(c) != "Mn").replace("-", " ")
+
+
+def _num(x: str) -> int:
+    return int(x) if x.isdigit() else NUMEROS[x]
 
 
 def _variantes_municipio(nombre: str) -> list[str]:
@@ -62,18 +78,17 @@ def _variantes(municipios: dict[str, str]) -> dict[str, list[str]]:
     return {ine: [x for x in vs if cuenta[x] == 1 or x == vs[0]] for ine, vs in todas.items()}
 
 
-def interpretar(texto: str, municipios: dict[str, str]) -> dict:
-    """Devuelve los campos que se han podido entender (los demás quedan en None)."""
-    t = " " + _norm(texto) + " "
-    out = {"ocupacion": None, "ine": None, "coche": None, "hijo": None, "formacion": None, "T": None}
-
+def _municipio(t: str, municipios: dict[str, str]):
     mejor = (0, None)
-    for ine, vs in _variantes(municipios).items():
-        for v in vs:
-            if len(v) >= 4 and re.search(rf"\b{re.escape(v)}\b", t) and len(v) > mejor[0]:
-                mejor = (len(v), ine)
-    out["ine"] = mejor[1]
+    candidatos = [(v, ine) for ine, vs in _variantes(municipios).items() for v in vs]
+    candidatos += [(a, ine) for a, ine in ALIAS.items() if ine in municipios]
+    for v, ine in candidatos:
+        if len(v) >= 4 and len(v) > mejor[0] and re.search(rf"\b{re.escape(v)}\b", t):
+            mejor = (len(v), ine)
+    return mejor[1]
 
+
+def _ocupacion(t: str):
     pos = {}
     for oid, claves in SINONIMOS.items():
         for k in claves:
@@ -82,25 +97,50 @@ def interpretar(texto: str, municipios: dict[str, str]) -> dict:
                 # coincidencia más larga (más específica) gana; a igualdad, la primera en el texto
                 if oid not in pos or len(k) > pos[oid][0]:
                     pos[oid] = (len(k), i)
-    if pos:
-        out["ocupacion"] = max(pos, key=lambda o: (pos[o][0], -pos[o][1]))
+    return max(pos, key=lambda o: (pos[o][0], -pos[o][1])) if pos else None
 
-    if re.search(r"(no tengo|sin) (coche|carne|vehiculo)", t):
-        out["coche"] = False
-    elif re.search(r"(tengo|con) (coche|vehiculo)", t):
-        out["coche"] = True
 
-    if re.search(r"\b(hij[oa]s?|nin[oa]s?|bebe|guarderia|peque)\b", t):
-        edad = re.search(r"(hij[oa]s?|nin[oa]s?|bebe|peque\w*)\s+(de\s+)?(\d+)\s*(anos|ano|meses)", t)
-        edad = re.match(r"(\d+)\s*(\w+)", f"{edad.group(3)} {edad.group(4)}") if edad else None
-        out["hijo"] = True if not edad or edad.group(2) == "meses" or int(edad.group(1)) <= 3 else False
+def _coche(t: str):
+    veh = r"(coche|carne|carnet|vehiculo|furgoneta|moto|auto)"
+    if re.search(rf"(no tengo|no dispongo de|sin)( ni)?( de)?( un| una)? {veh}\b|no conduzco|no se conducir", t):
+        return False
+    if re.search(rf"(tengo|con|dispongo de|uso)( un| una| mi)? {veh}\b|\b{veh} propi[oa]|\bconduzco", t):
+        return True
+    return None
 
-    if re.search(r"(estudiar|formarme|formacion|curso|fp\b|reciclarme|aprender)", t):
-        out["formacion"] = not re.search(r"no (quiero|puedo) (estudiar|formarme)", t)
 
-    m = re.search(r"(\d+)\s*(min|minutos)", t)
+def _hijo(t: str):
+    m = re.search(r"\b(hij[oa]s?|nin[oa]s?|bebes?|guarderia|peque\w*|criaturas?)\b", t)
+    if not m:
+        return None
+    # edades que siguen a la palabra («dos hijos de 5 y 8 años», «un niño de 18 meses»)
+    ventana = t[m.end():m.end() + 45]
+    u = re.search(r"\b(anos?|meses|mes)\b", ventana)
+    if not u:
+        return True
+    if u.group(1).startswith("mes"):
+        return True
+    edades = [n for n in (_num(x) for x in re.findall(rf"\b{_NUM}\b", ventana[:u.start()])) if n <= 25]
+    return True if not edades else any(n <= 3 for n in edades)
+
+
+def _tiempo(t: str):
+    m = re.search(r"(\d+)\s*(min|minutos)\b", t)
     if m:
-        out["T"] = int(m.group(1))
-    elif re.search(r"(\d+|una)\s*hora", t):
-        out["T"] = 60
+        return int(m.group(1))
+    for patron, minutos in ((r"hora y media", 90), (r"media hora", 30), (r"tres cuartos", 45),
+                            (r"cuarto de hora", 15)):
+        if re.search(patron, t):
+            return minutos
+    m = re.search(r"\b(\d+|una|un|dos)\s*horas?\b", t)
+    return 60 * _num(m.group(1)) if m else None
+
+
+def interpretar(texto: str, municipios: dict[str, str]) -> dict:
+    """Devuelve los campos que se han podido entender (los demás quedan en None)."""
+    t = " " + _norm(texto) + " "
+    out = {"ocupacion": _ocupacion(t), "ine": _municipio(t, municipios), "coche": _coche(t), "hijo": _hijo(t),
+           "formacion": None, "T": _tiempo(t)}
+    if re.search(r"(estudiar|formarme|formacion|curso|fp\b|reciclarme|aprender)", t):
+        out["formacion"] = not re.search(r"no (quiero|puedo|me interesa) (estudiar|formarme)", t)
     return out

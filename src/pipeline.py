@@ -9,7 +9,7 @@ import json
 
 import pandas as pd
 
-from . import datos, download, gtfs, indicadores, recursos, tiempos
+from . import datos, download, gtfs, indicadores, recursos, tiempos, validacion
 from .config import PROCESSED, RAW
 
 
@@ -49,6 +49,9 @@ def main(recalcular_tiempos=False, plan_c=False):
 
     print("6/6 Recursos")
     recursos.construir_recursos().to_csv(PROCESSED / "recursos.csv", index=False)
+
+    print("   Validación (EDM 2018, paro, robustez)")
+    validacion.construir()
 
     # Trazabilidad: qué fichero bruto (y de qué fecha) alimenta esta versión
     metas = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(RAW.glob("*.meta.json"))]

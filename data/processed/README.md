@@ -211,3 +211,30 @@ Códigos y nombres de los sectores.
 26 ocupaciones con su sector, código CNO-11 (4 dígitos, orientativo), tres «saltos cortos»
 (ocupaciones con competencias muy compartidas) y un «salto con formación» con la formación
 requerida y su duración típica. Correspondencia elaborada por el equipo.
+
+## `validacion_tiempos_edm.csv` y `validacion.json` — validación externa
+
+Generados con `python -m src.validacion` (también al final del pipeline).
+
+`validacion_tiempos_edm.csv`: un par origen-destino por fila con al menos 5 viajes de la encuesta.
+
+| Columna | Unidad | Descripción |
+|---|---|---|
+| origen, destino | — | municipios (código INE; las zonas ZT1259 de la encuesta empiezan por los 3 dígitos del municipio) |
+| nombre_origen, nombre_destino | — | nombres |
+| min_edm | minutos | mediana ponderada (elevador `ELE_G_POND_ESC2`) de la duración declarada: hora de llegada − hora de salida |
+| viajes_edm | viajes | viajes de la muestra en ese par |
+| min_tp, metodo_tp | minutos, — | tiempo del modelo (`tiempos_tp.csv`) |
+| diferencia_min | minutos | min_tp − min_edm |
+| con_madrid | bool | uno de los extremos es Madrid capital |
+
+Viajes usados: motivo origen = casa y destino = trabajo, modo prioritario de transporte público
+(Cercanías, autobús interurbano, autobús urbano, Metro, Metro Ligero, EMT), salida entre 6:00 y
+9:59, entre municipios distintos. Fuente: «Resultados de la EDM 2018» (catálogo de la Comunidad
+de Madrid; fichero EDM2018VIAJES del Consorcio Regional de Transportes).
+
+`validacion.json` resume: diferencia mediana, error absoluto medio y proporción de pares dentro de
+±15 min (solo pares con tiempos de horarios reales); correlación de Spearman entre el acceso
+(índice relativo y puestos alcanzables, sector TOT, transporte público) y la tasa de paro
+(parados / población) en municipios de ≥ 2.000 habitantes sin hueco de GTFS, para T = 30–75; y
+robustez: Spearman entre el índice con umbral (T = 60) y un 2SFCA de decaimiento gaussiano.
