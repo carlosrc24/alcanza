@@ -21,7 +21,8 @@ Regenerar los datos desde cero (descarga ~250 MB a `data/raw/`):
 
 ```bash
 python -m src.pipeline                      # reutiliza data/processed/tiempos_tp.csv
-python -m src.pipeline --tiempos            # recalcula tiempos con r5py (Java 21+, ~16 GB RAM)
+python -m src.pipeline --tiempos            # recalcula tiempos con r5py (Java 21+, 16 GB RAM, ~30 min;
+                                            # por tandas reanudables en data/interim/)
 python -m src.pipeline --tiempos --plan-c   # tiempos aproximados sin r5py
 ```
 

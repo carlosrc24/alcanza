@@ -103,11 +103,42 @@ residencia y rama de actividad. Municipios» del propio municipio.
 | min_tp | minutos | transporte público + a pie, **mediana** de las salidas minuto a minuto entre 7:00 y 9:00 de un martes laborable; 181 = no alcanzable en 180 min |
 | min_coche | minutos | coche, aproximado: distancia en línea recta × 1,3 a 30 km/h (< 10 km) o 55 km/h, + 5 min |
 | accesible_tp | bool | hay conexión en ≤ 180 min |
-| metodo_tp | — | `r5py_gtfs_osm_p50_7a9h` (plan A) o `plan_c_aproximado` (respaldo) |
+| metodo_tp | — | por par: `r5py_gtfs_osm_p50_7a9h` (plan A), `estimado_hueco_gtfs` (estimado por hueco de la fuente, ver abajo) o `plan_c_aproximado` (respaldo) |
 
 **Comprobad la columna `metodo_tp`.** Con el plan A los tiempos salen de horarios reales. Con el
 plan C (respaldo, sin r5py) se aproximan como 15 min de acceso y espera más la distancia
 (× 1,3) a 25 km/h si los dos municipios tienen paradas, o a 15 km/h si no las tienen.
+
+**Hueco de la fuente (`estimado_hueco_gtfs`).** El Consorcio publica el GTFS de autobuses
+interurbanos como «Datos parciales» (versión del 16-10-2026). En él, 13 líneas no traen viajes
+(522, 635, 720–728, N702, N908: entre ellas toda la concesión de Colmenar Viejo) y 48 traen
+horarios «de relleno» (todas las paradas a las 02:00:00); en el GTFS de urbanos del resto de
+municipios hay otras 23 líneas así. Un municipio se marca afectado (`huecos_gtfs.csv`) si al menos
+el 65 % de sus paradas de autobús no tienen ningún viaje con horario real. En los pares con un
+extremo afectado, `min_tp` es el menor entre el valor de r5py y una estimación: regresión cuantílica
+(mediana) `t_tp = a + b · t_coche` ajustada por tipo de par sobre los pares no afectados
+(coeficientes y error en `estimacion_hueco_gtfs.csv`). La estimación es conservadora en trayectos
+cortos entre municipios vecinos.
+
+**Madrid capital es un único destino**, situado en su núcleo (mediana de sus paradas). Cuando el
+umbral T supera el tiempo hasta ese punto se suman de golpe unos 2,9 millones de puestos (p. ej.,
+desde Parla: 62 min, el salto se ve entre T = 60 y T = 75). Es una simplificación declarada de la
+unidad municipal; la desagregación por distritos queda como mejora.
+
+## `huecos_gtfs.csv` — 179 filas
+
+| Columna | Unidad | Descripción |
+|---|---|---|
+| ine | — | municipio |
+| paradas_sin_horario | proporción | paradas de autobús (interurbanos y urbanos) del municipio sin ningún viaje con horario real en la fuente |
+| ferrocarril | bool | tiene alguna parada de Cercanías, Metro o Metro Ligero |
+| hueco_gtfs | bool | `paradas_sin_horario` ≥ 0,65: sus tiempos se completan con la estimación |
+
+## `estimacion_hueco_gtfs.csv`
+
+Coeficientes de la estimación por tipo de par (`madrid`: un extremo es Madrid capital;
+`ferrocarril_ambos`, `ferrocarril_uno`, `autobus`): `a_min`, `b`, número de pares del ajuste y
+error absoluto mediano en minutos.
 
 Plan A — viajes dentro del propio municipio: 10 min por convención (simplificación declarada, afecta
 sobre todo a Madrid capital). Cálculo con r5py (motor R5 de Conveyal) sobre OpenStreetMap

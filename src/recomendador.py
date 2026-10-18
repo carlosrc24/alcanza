@@ -187,7 +187,12 @@ def resumir(D, t, base, yo) -> str:
     ppc = _fmt(i["puestos_por_competidor"], 1)
     d0 = t.destinos.iloc[0]["nombre"] if len(t.destinos) else None
     if t.tipo == "directo":
-        txt = f"{_fmt(i['puestos_alcanzables'])} puestos de tu sector a tu alcance, {ppc} por cada demandante."
+        rel = i["indice_relativo"]
+        frente = ("la media regional" if 0.9 <= rel <= 1.1 else
+                  f"{_fmt(rel, 1)} veces la media regional" if rel > 1.1 else
+                  f"un {_fmt((1 - rel) * 100)} % menos que la media regional")
+        txt = (f"{_fmt(i['puestos_alcanzables'])} puestos de tu sector a tu alcance, {ppc} por cada demandante "
+               f"({frente}).")
         return txt + (f" Donde mejor: {d0}." if d0 else "")
     sal_t = salario(D, D["ocu"].set_index("id").loc[t.ocupacion_id, "cno11"])
     sal_b = salario(D, yo["cno11"])

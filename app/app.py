@@ -53,9 +53,19 @@ def datos(version: float):
     D = R.cargar()
     D["geo"] = json.loads((PROCESSED / "municipios.geojson").read_text(encoding="utf-8"))
     D["fuentes"] = json.loads((PROCESSED / "fuentes.json").read_text(encoding="utf-8"))
-    D["metodo_tp"] = {"r5py_gtfs_osm_p50_7a9h": "horarios reales (GTFS) en hora punta, mediana de 7:00 a 9:00",
-                      "plan_c_aproximado": "APROXIMADOS por distancia (plan C, provisional)"}.get(
-        D["tt"]["metodo_tp"].iloc[0], D["tt"]["metodo_tp"].iloc[0])
+    tt = D["tt"]
+    est = tt["metodo_tp"] == "estimado_hueco_gtfs"
+    if (tt["metodo_tp"] == "plan_c_aproximado").all():
+        D["metodo_tp"] = "APROXIMADOS por distancia (plan C, provisional)"
+    else:
+        D["metodo_tp"] = "horarios reales (GTFS) en hora punta, mediana de 7:00 a 9:00"
+        if est.any():
+            D["metodo_tp"] += (f"; el {est.mean() * 100:.0f} % de los pares, estimados por horarios incompletos "
+                               f"en el GTFS de interurbanos")
+    # proporción de tiempos estimados desde cada origen (hueco del GTFS de interurbanos)
+    D["pct_est"] = est.groupby(tt["origen"]).mean()
+    fh = PROCESSED / "huecos_gtfs.csv"
+    D["hueco"] = (set(pd.read_csv(fh, dtype={"ine": str}).query("hueco_gtfs")["ine"]) if fh.exists() else set())
     return D
 
 
@@ -86,7 +96,13 @@ def mapa(features_props, puntos=None, centro=(40.42, -3.70), zoom=8.3, alto=520)
         f["properties"].update(features_props.get(f["properties"]["ine"], {}))
     capas = [pdk.Layer("GeoJsonLayer", geo, pickable=True, stroked=True, filled=True,
                        get_fill_color="properties.fill", get_line_color="properties.line",
-                       get_line_width="properties.lw", line_width_units="pixels")]
+                       get_line_width="properties.lw", line_width_units="'pixels'", line_width_min_pixels=0.5)]
+    # bordes destacados encima, para que los polígonos vecinos no los tapen
+    resaltados = [f for f in geo["features"] if f["properties"].get("lw", 0) >= 2]
+    if resaltados:
+        capas.append(pdk.Layer("GeoJsonLayer", {"type": "FeatureCollection", "features": resaltados},
+                               stroked=True, filled=False, get_line_color="properties.line",
+                               get_line_width=3, line_width_units="'pixels'", line_width_min_pixels=3))
     if puntos is not None and len(puntos):
         capas.append(pdk.Layer("ScatterplotLayer", puntos, get_position=["lon", "lat"], get_fill_color="color",
                                get_radius=170, radius_min_pixels=3, pickable=True))
@@ -175,6 +191,10 @@ def vista_ciudadania():
         c2.metric("Frente a la media regional", f"×{fmt(ind['indice_relativo'], 2)}",
                   delta=f"{fmt(ind['var_interanual'] * 100, 1)} % empleo en un año"
                   if not pd.isna(ind["var_interanual"]) else None)
+        p_est = D["pct_est"].get(ss.ine, 0)
+        if not ss.coche and ss.ine in D["hueco"] and p_est > 0:
+            a.caption(f"⚠ El {fmt(p_est * 100)} % de los tiempos desde {NOM[ss.ine]} son estimados: el GTFS de "
+                      f"autobuses interurbanos del Consorcio está incompleto («Datos parciales») en esta zona.")
 
         # mapa: destinos alcanzables coloreados por puestos por demandante del destino
         t = R.tiempos_desde(D, ss.ine, res["modo"])
@@ -312,12 +332,16 @@ def vista_planificacion():
         else:
             b = bal.loc[ine, "balance"] if ine in bal.index else 0
             fill = ([180, 83, 9, 200] if b <= 0.6 else [15, 118, 110, 200] if b >= 1.1 else [209, 213, 219, 200])
-        props[ine] = {"fill": fill, "line": [220, 38, 38] if r["desierto"] else [255, 255, 255],
-                      "lw": 3 if r["desierto"] else 0.5,
+        hueco = ine in D["hueco"]
+        props[ine] = {"fill": fill,
+                      "line": [220, 38, 38] if r["desierto"] else [124, 58, 237] if hueco else [255, 255, 255],
+                      "lw": 3 if r["desierto"] else 2 if hueco else 0.5,
                       "tip": f"<b>{NOM[ine]}</b><br>{fmt(r['puestos_por_competidor'], 1)} puestos por demandante "
                              f"(×{fmt(r['indice_relativo'], 2)} media)<br>{fmt(r['parados'])} parados del sector<br>"
                              f"Balance empleo/residentes: {fmt(bal.loc[ine, 'balance'] if ine in bal.index else np.nan, 2)}"
-                             + ("<br><b style='color:#fca5a5'>Desierto de empleo accesible</b>" if r["desierto"] else "")}
+                             + ("<br><b style='color:#fca5a5'>Desierto de empleo accesible</b>" if r["desierto"] else "")
+                             + ("<br><i>Tiempos estimados: horarios de autobús incompletos en la fuente</i>"
+                                if hueco else "")}
     izq, der = st.columns([2.2, 1], gap="large")
     with izq:
         mapa(props, alto=560)
@@ -325,13 +349,14 @@ def vista_planificacion():
             "Más oscuro = más puestos por demandante en transporte público · borde rojo = desierto (tercio con "
             "menos acceso y tercio con más paro por habitante)" if capa == "Accesibilidad" else
             "Verde = polo de empleo (más puestos que residentes ocupados) · ocre = ciudad dormitorio (≤0,6) · "
-            "borde rojo = desierto") + "</span>", unsafe_allow_html=True)
+            "borde rojo = desierto") + " · borde morado = tiempos estimados (horarios de autobús incompletos en "
+            "el GTFS del Consorcio)</span>", unsafe_allow_html=True)
     with der:
         des = df[df["desierto"]].sort_values("parados", ascending=False)
         st.metric("Parados en desiertos de empleo accesible", fmt(des["parados"].sum()),
                   help="Parados del sector que viven en municipios del tercio con menor accesibilidad y del tercio "
                        "con más paro por habitante.")
-        st.dataframe(des.assign(municipio=[NOM[i] for i in des.index])[
+        st.dataframe(des.assign(municipio=[NOM[i] for i in des.index], parados=des["parados"].round(0).astype(int))[
                          ["municipio", "parados", "indice_relativo"]].rename(columns={
                          "municipio": "Municipio", "parados": "Parados", "indice_relativo": "Acceso (×media)"}).round(2),
                      hide_index=True, height=300)
@@ -392,6 +417,18 @@ Consorcio (Metro, Metro Ligero, EMT, interurbanos, urbanos) y de Renfe Cercanía
 Consorcio no trae horarios) sobre la red peatonal de OpenStreetMap; mediana de las salidas entre 7:00 y 9:00 de un
 martes laborable. Plan C (respaldo): 15 min de acceso y espera + distancia × 1,3 a 25 km/h. Coche: distancia × 1,3
 a 30–55 km/h + 5 min (aproximado).
+
+**Hueco en la fuente de autobuses interurbanos.** El Consorcio publica el GTFS de interurbanos como «Datos
+parciales»: 13 líneas no traen viajes (entre ellas la concesión de Colmenar Viejo, 720–728) y 48 traen horarios de
+relleno (todas las paradas a las 02:00). En los municipios donde al menos el 65 % de las paradas de autobús no tienen
+horario utilizable (Sierra Norte, Colmenar Viejo, Las Vegas…, borde morado en el mapa), el tiempo de cada par es el
+menor entre r5py y una estimación: mediana condicionada al tiempo en coche, ajustada sobre los pares bien cubiertos
+por tipo de par (con Madrid, con ferrocarril o solo autobús; error absoluto mediano 11–19 min). Es conservadora en
+trayectos cortos. Esos pares figuran como `estimado_hueco_gtfs` en `tiempos_tp.csv`.
+
+**Madrid capital es un solo destino** situado en su núcleo (mediana de sus paradas). Al subir el tiempo máximo por
+encima del que se tarda en llegar a él, se suman de golpe unos 2,9 millones de puestos: es un salto real del modelo
+municipal, no un error. Desagregar Madrid por distritos queda como mejora futura.
 
 **Sectores:** el paro registrado por municipio solo distingue agricultura, industria, construcción y servicios.
 Servicios se reparte entre tres ramas con la estructura de afiliados residentes del propio municipio
