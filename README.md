@@ -17,6 +17,11 @@ pip install -r requirements.txt
 streamlit run app/app.py          # abre el prototipo (lee data/processed/, ya incluido en el repo)
 ```
 
+**Entrada con IA (opcional).** Para que «Escríbelo con tus palabras» use Google Gemini, copia
+`.env.example` como `.env` y pon tu clave de Google AI Studio en `GOOGLE_AI`. El `.env` no se
+sube a git. Sin clave, o si Gemini no responde, la app entiende el texto con reglas fijas. La IA
+solo rellena los campos del formulario para que la persona los revise: no puntúa ni recomienda.
+
 Regenerar los datos desde cero (descarga ~250 MB a `data/raw/`):
 
 ```bash
@@ -37,7 +42,8 @@ python -m src.pipeline --tiempos --plan-c   # tiempos aproximados sin r5py
 | `src/tiempos.py` | matriz 179×179 con r5py (plan A) y plan C aproximado; coche aproximado |
 | `src/indicadores.py` | 2SFCA (puestos por demandante) para 6 umbrales × 2 modos × 7 sectores |
 | `src/recomendador.py` | perfil → tres tarjetas con puntuación desglosada y «por qué» |
-| `src/texto.py` | texto libre → campos del formulario (determinista; el usuario confirma) |
+| `src/ia.py` | texto libre → campos con Google Gemini (salida restringida a nuestras listas, varios modelos de respaldo) |
+| `src/texto.py` | texto libre → campos con reglas fijas (respaldo sin IA; completa lo que la IA deja vacío) |
 | `src/recursos.py` | escuelas infantiles, FP, formación para el empleo, servicios sociales |
 | `src/simulador.py` | simulador «¿y si…?» y ranking de mejoras de transporte (parados que salen de desiertos) |
 | `src/validacion.py` | validación: tiempos frente a la EDM 2018, acceso frente a paro, robustez del 2SFCA |

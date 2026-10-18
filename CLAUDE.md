@@ -8,15 +8,18 @@ Contexto para Claude Code. Léelo entero antes de escribir código.
 Ana Denis Rubio, Jiaxing Zhu, Pedro González Carnero; Máster en Ingeniería Informática, UC3M)
 para el **MAD Open Data Challenge 2026**. La idea ya fue aceptada; la propuesta completa está en
 `docs/` (tres PDF: aproximación técnica, fuentes de datos, propuesta de interfaz). Si algo de este
-fichero contradice los PDF, manda este fichero: es la versión recortada para llegar a tiempo.
+fichero contradice los PDF, manda este fichero.
 
 Alcanza recomienda a una persona que busca empleo en la Comunidad de Madrid **qué empleo puede
 alcanzar de verdad en transporte público**, cuánta gente compite por él, qué trabajo parecido
 puede hacer y qué formación y recursos (escuelas infantiles, servicios sociales) tiene cerca.
 Tiene una segunda vista para orientadores/Consejería con el mapa de «desiertos de empleo
-accesible».
+accesible», un simulador «¿y si…?» y un ranking de mejoras de transporte.
 
-## Qué hay que entregar (fecha límite: demo presencial el 20 de octubre de 2026)
+Repositorio público: https://github.com/carlosrc24/alcanza (la app **no** se publica en internet:
+decisión del equipo; se ejecuta en local).
+
+## Qué hay que entregar (demo presencial el 20 de octubre de 2026)
 
 1. **Prototipo funcional** que el jurado pueda usar en directo (demo de 10 minutos).
 2. **Datasets elaborados** que use el prototipo: CSV en `data/processed/`, cada uno con su
@@ -31,143 +34,141 @@ Cómo puntúa el jurado (100 puntos):
 Requisito de las bases: los **datos de la Comunidad de Madrid deben ser protagonistas**. No
 sustituirlos por otras fuentes.
 
-## Alcance mínimo (MVP) — priorizar en este orden
+## Estado (18-10-2026): todo el MVP y casi todos los extras están hechos
 
-Hay muy poco tiempo. Antes de añadir nada, que funcione esto de punta a punta:
+A dos días de la demo: **no añadir funcionalidades nuevas**; solo arreglos que salgan al ensayar.
 
-1. **Unidad territorial: los 179 municipios.** (La desagregación de Madrid capital en zonas de
-   transporte de la EDM es un extra, solo si sobra tiempo.)
-2. **Tiempos de viaje en transporte público** entre municipios (matriz 179×179, hora punta
-   laborable 7:00–9:00, mediana). Ver «Tiempos de viaje» abajo.
-3. **Indicadores por municipio y sector**:
-   - `puestos_alcanzables`: suma de puestos (afiliados por cuenta de cotización) de los
-     municipios a ≤ T minutos.
-   - `competidores`: parados del sector que pueden llegar a esos mismos destinos.
-   - `puestos_por_competidor` (indicador principal, método 2SFCA / Shen 1998):
-     para cada destino j: `R_j = puestos_j / Σ_k parados_k · [t_kj ≤ T]`;
-     para cada origen i: `A_i = Σ_j R_j · [t_ij ≤ T]`.
-   - `balance_empleo`: afiliados por cuenta de cotización / afiliados por residencia.
-   - `tendencia`: variación interanual de afiliación (sube / estable / baja).
-4. **Recomendador**: entrada (ocupación o sector, municipio, coche sí/no, hijo 0–3 sí/no,
-   formación sí/no, tiempo máximo) → tres tarjetas: *trabajo directo*, *salto corto*,
-   *salto con formación*, cada una con su explicación («por qué»).
-   Puntuación = suma ponderada de indicadores normalizados; los pesos los mueve el usuario.
-5. **App** con mapa + deslizadores + tarjetas + vista «planificación» (mapa coroplético).
-6. Extras, por este orden: escuelas infantiles en ruta (conciliación), centros de FP cercanos,
-   afinidad entre ocupaciones con ESCO, entrada en lenguaje natural con un LLM, simulador
-   «¿y si…?».
+| Pieza | Estado | Dónde |
+|---|---|---|
+| 179 municipios, puestos y parados por sector | hecho | `src/datos.py` |
+| Tiempos TP reales (r5py, 7–9 h, mediana) + coche aproximado | hecho | `src/gtfs.py`, `src/tiempos.py` |
+| 2SFCA por sector × T (15–90) × modo (tp/coche), tendencia | hecho | `src/indicadores.py` |
+| Recomendador: 3 tarjetas con puntuación desglosada y «por qué» | hecho | `src/recomendador.py` |
+| Escuelas infantiles, FP, formación para el empleo, servicios sociales | hecho | `src/recursos.py` |
+| Texto libre → campos: IA (Gemini) con respaldo por reglas | hecho | `src/ia.py`, `src/texto.py` |
+| Simulador «¿y si…?» y ranking de mejoras de transporte | hecho | `src/simulador.py` |
+| Validación externa (EDM 2018, paro, robustez) | hecho | `src/validacion.py` |
+| App: 3 vistas, diseño propio (tema en `.streamlit/config.toml`) | hecho | `app/app.py` |
+| Pruebas (16): datos, conservación 2SFCA, recomendador, texto, IA, app, validación | hecho | `tests/` |
+| Afinidad entre ocupaciones con ESCO | **no** (tabla hecha a mano de 26 ocupaciones) | `data/ref/ocupaciones.csv` |
+| Madrid capital desagregada por distritos | **no** (declarado como límite) | — |
 
-Si un paso se atasca más de medio día, usar el plan B indicado y seguir.
+## Cómo se ejecuta
 
-## Datos — fuentes (títulos exactos del catálogo de la Comunidad)
+```bash
+pip install -r requirements.txt
+streamlit run app/app.py                    # la app solo lee data/processed/ (ya en el repo)
+python -m pytest -q                         # ~5 min (más si hay otra app abierta)
+python -m src.pipeline                      # regenera todo reutilizando los tiempos
+python -m src.pipeline --tiempos            # recalcula tiempos con r5py (Java 21+, ~30 min, 16 GB)
+python -m src.validacion                    # solo la validación
+```
 
-Catálogo: https://datos.comunidad.madrid/catalogo — API CKAN estándar:
-`https://datos.comunidad.madrid/api/3/action/package_search?q=<texto>` y
-`.../package_show?id=<id>`. Los ids no los sabemos: **buscar por título** con `package_search`
-y guardar el id encontrado en `src/config.py`. Guardar siempre lo descargado en `data/raw/`
-con la fecha.
+r5py va por tandas reanudables en `data/interim/tiempos_r5py_<firma>/`. La firma depende de los
+GTFS en bruto, del **código de `src/gtfs.py`**, del OSM y de los puntos: tocar `gtfs.py` invalida
+la caché y obliga a recalcular (~25 min). La vez que se calculó entero hubo que cerrar Chrome y
+Streamlit por memoria.
 
-Empleo (núcleo):
-- «Afiliados a la Seguridad Social en alta laboral a último día de mes según cuentas de
-  cotización, por municipio. Comunidad de Madrid» → **puestos por municipio de trabajo**
-  (mensual). Comprobar si trae rama/sector; si no, ver «Huecos».
-- «Afiliados a la Seguridad Social en alta laboral a último día de mes, por municipio.
-  Comunidad de Madrid» (mensual).
-- «Afiliados a la Seguridad Social por lugar de residencia y rama de actividad. Municipios»
-  (anual, 1 enero) → estructura sectorial por residencia.
-- «Paro registrado en las oficinas de empleo por nacionalidad, sector de actividad y sexo
-  CNAE 09. Municipios» (anual, 31 marzo) → **parados por sector y municipio de residencia**.
-- «Movimiento Laboral Registrado. Paro registrado, por sexo y municipio. Comunidad de Madrid»
-  y «… por edad y municipio …» (mensual).
-- «Movimiento Laboral Registrado. Contratos de trabajo, por municipio. Comunidad de Madrid».
-- «Población ocupada de 16 y más años por ocupación y sexo. Censo anual. Municipios».
-- «Ganancia media anual por trabajador por ocupación y antigüedad» y «… por actividad, tipo de
-  contrato y sexo» (salario, regional).
-- «Accidentes de trabajo con baja en jornada de trabajo según grandes grupos de ocupación».
+## Datos usados (ids reales en `src/config.py`)
 
-Transporte (Consorcio Regional de Transportes, etiqueta `CRTM` en el catálogo:
-https://datos.comunidad.madrid/catalogo/dataset?tags=CRTM). Los recursos son enlaces HTML a
-datos.crtm.es; el ZIP GTFS se descarga desde allí:
-- «Oferta planificada de la Red de Metro», «… de la Red de Cercanías Madrid», «… de la Red de
-  Autobuses Interurbanos», «… de la Red de Autobuses Urbanos de Madrid - EMT», «… de la Red
-  de Autobuses Urbanos del resto de municipios» (GTFS) y GTFS de Metro Ligero.
-- «Aparcamientos de disuasión ligados al transporte público…» (extra).
+Catálogo de la Comunidad (CKAN): https://datos.comunidad.madrid/catalogo. Todo se descarga a
+`data/raw/<clave>__<fecha>.*` con un `.meta.json` (título, url, fecha) → `data/processed/fuentes.json`.
 
-Educación y social:
-- «Centros educativos de la comunidad de Madrid»
-  (https://datos.comunidad.madrid/catalogo/dataset/centros_educativos) → escuelas infantiles
-  y centros de FP (filtrar por tipo/etapa; geocodificar si no hay coordenadas).
-- «Estadísticas de alumnos de centros educativos de la Comunidad de Madrid» → ciclos de FP.
-- «Registro de centros de atención social» y «Registro de servicios de atención social».
+- Puestos por **lugar de trabajo y rama**: «Trabajadores afiliados en alta laboral a la Seguridad
+  Social por ubicación del centro de trabajo y rama de actividad. Municipios» → trae sector, así
+  que **no hizo falta IPF**.
+- Afiliados por residencia y rama (estructura para repartir «Servicios» del paro y balance).
+- Paro registrado por nacionalidad, sector y sexo (CNAE 09), municipios, 31 de marzo.
+- Padrón por sexo (población); ganancia media por ocupación (salario, regional); centros
+  educativos; registro de centros de atención social; límites municipales (SHP «Covid 19 - TIA por
+  Municipios y Distritos de Madrid», distritos disueltos en 28079).
+- GTFS del Consorcio (Metro, Metro Ligero, EMT, interurbanos, urbanos del resto) desde
+  crtm.maps.arcgis.com; **GTFS de Renfe Cercanías** (el de Cercanías del Consorcio viene vacío).
+- OpenStreetMap (Geofabrik «madrid») para la red peatonal de r5py.
+- **«Resultados de la EDM 2018»** (catálogo de la Comunidad; Excel EDM2018VIAJES del Consorcio)
+  para validar tiempos. Zonas ZT1259: los 3 primeros dígitos son el código INE del municipio.
+- Clave común: código INE de 5 dígitos (`"28" + 3 primeros dígitos` del código de 4 del catálogo;
+  se descarta 9999).
 
-Territorio:
-- Límites municipales: Geoportal de la Comunidad de Madrid (o IGN/CNIG como respaldo).
-  Clave común: **código INE de municipio de 5 dígitos** (28xxx).
+No usados (por tiempo): contratos de trabajo, paro por sexo/edad mensual, ocupados por ocupación
+del censo, ESCO.
 
-Complementarias: ESCO (Comisión Europea, CSV descargable), correspondencia CNO-11 ↔ CIUO-08
-(INE), OpenStreetMap (red peatonal para r5py; extracto `madrid` de Geofabrik).
+## Huecos de los datos encontrados y cómo se han tratado
 
-## Huecos conocidos de los datos y cómo tratarlos
+- **Paro solo con 4 sectores** y el último año (2026) **solo con el total**: estructura sectorial
+  del último año con desglose (2025) escalada al total 2026; «Servicios» repartido entre DIS/EMP/OTR
+  con la estructura de afiliados residentes (`estimado = True`). Parados sin empleo anterior,
+  pro rata.
+- Afiliación por rama redondeada a 5 desde 2021: se reescala al total municipal.
+- **GTFS**: los feeds no comparten calendario (Metro caducó en mayo de 2026); `src/gtfs.py` congela
+  cada uno en un martes laborable propio y los reasigna al 27-10-2026.
+- **GTFS de interurbanos publicado como «Datos parciales»**: 13 líneas sin viajes (522, 635,
+  720–728 de Colmenar Viejo, N702, N908) y 48 con horarios de relleno (todo a las 02:00); en
+  urbanos del resto, 23 más. En 26 municipios (≥ 65 % de paradas de bus sin horario,
+  `huecos_gtfs.csv`) cada par usa min(r5py, regresión cuantílica t_tp = a + b·t_coche por tipo de
+  par) → `metodo_tp = estimado_hueco_gtfs`. Como solo añade destinos a partir de ~75–90 min, su
+  acceso es una cota inferior: **no se clasifican como desiertos** (borde morado en el mapa) y la
+  app avisa.
+- **Madrid capital es un único destino** en su núcleo: al superar T el tiempo hasta él se suman
+  ~2,9 M de puestos de golpe (desde Parla, 62 min: el salto está entre T = 60 y 75). Declarado.
+- No hay ofertas de empleo abiertas: la demanda se aproxima con puestos existentes y tendencia.
 
-- **Afiliación y contratos redondeados a múltiplos de 5**: usar medias de 12 meses.
-- **Paro por residencia, puestos por lugar de trabajo**: es lo que se necesita (competidores en
-  origen, puestos en destino). No mezclar.
-- **Si los puestos por municipio de trabajo no traen sector**: estimar `puestos_j,s` con IPF
-  (ajuste proporcional iterativo): margen de filas = total de puestos por municipio de trabajo;
-  margen de columnas = total regional por sector; semilla = estructura sectorial por residencia.
-  Marcar la columna como `estimado = True`.
-- **No hay paro por ocupación y municipio**: trabajar por sector (CNAE-09, secciones A–U). La
-  ocupación del usuario se traduce a sector(es) con una tabla de correspondencia sencilla
-  (`data/ref/ocupacion_sector.csv`, hecha a mano para las ~20 ocupaciones de la demo si no da
-  tiempo a más).
-- **No hay ofertas de empleo abiertas**: la demanda se aproxima con puestos existentes +
-  contratación + tendencia. Decirlo en la app.
+## Método (resumen)
 
-## Tiempos de viaje
+- Origen/destino = núcleo del municipio (mediana de sus paradas); dentro del municipio, 10 min.
+- 2SFCA (Shen 1998) **por modo**: en `tp` se compite con parados que llegan en TP; en `coche`, con
+  los que llegan en coche. Propiedad de conservación (Σ parados·A = puestos alcanzados) verificada
+  en `tests/`. Por eso el simulador **reparte, no suma**: el ranking de mejoras ordena por parados
+  que salen de un desierto, no por acceso total.
+- Desierto = tercio con menos acceso relativo y tercio con más paro por habitante (≥ 50 parados),
+  excluidos los municipios con hueco de GTFS.
 
-Plan A: **r5py** (necesita Java 21) con todos los GTFS + el `.osm.pbf` de la Comunidad. Origen
-y destino = centroide de cada municipio (mejor: centroide del núcleo urbano principal). Salidas
-cada 10 min entre 7:00 y 9:00 de un martes dentro del calendario de los GTFS; tomar la mediana.
+## Validación (`data/processed/validacion.json`, pestaña «Validación»)
 
-Plan B (si r5py no funciona en medio día): tiempo = acceso a pie a la parada más cercana +
-trayecto por la red GTFS con un grafo de paradas (networkx; tiempos de viaje de `stop_times`,
-transbordo penalizado 5 min) + egreso a pie. Plan C: distancia × velocidad media por tipo de
-municipio, marcado como aproximado.
+- Tiempos frente a 2.377 viajes casa→trabajo en TP de la EDM 2018 (80 pares): diferencia mediana
+  **−0,5 min**, error medio 10,7 min, **72 %** de pares a ±15 min (79 % sin Madrid capital).
+- Acceso frente a tasa de paro (Spearman, 103 municipios): negativo con el índice y con los puestos
+  alcanzables (este no usa el paro, así que no es circular).
+- Robustez: índice con umbral (T = 60) frente a 2SFCA gaussiano d₀ = 60 → Spearman 0,85.
 
-Validación (si da tiempo): comparar con viajes por motivo trabajo de la «Resultados de la EDM
-2018».
+## IA (Google Gemini) — solo para entender el texto libre
 
-## Stack
+- `src/ia.py`: llamada REST a la API de Gemini con **salida JSON restringida por esquema**
+  (ocupación y municipio solo pueden ser valores de nuestras listas), validada en Python. Si la
+  ocupación no está, elige la más parecida y la app lo dice. Lo que la IA deja vacío se completa
+  con las reglas de `src/texto.py`.
+- Modelos en cascada (`MODELOS`): `gemini-3.5-flash-lite` (~1 s) → `gemini-3.1-flash-lite` →
+  `gemini-flash-lite-latest` → `gemini-3.5-flash`; si fallan todos (cuota, red), reglas fijas. Los
+  2.5 ya no están disponibles para claves nuevas.
+- Clave: `GOOGLE_AI` en `.env` (**nunca se sube**; plantilla en `.env.example`), o variable de
+  entorno, o `.streamlit/secrets.toml`. `ALCANZA_SIN_IA=1` la desactiva (lo usan las pruebas de la
+  app). La app avisa de que, con IA, el texto se envía a Google.
+- **La IA nunca puntúa ni recomienda**: todas las cifras salen de los datos abiertos.
 
-- Python 3.11+. `pandas`, `geopandas`, `pyarrow`, `requests`; `r5py` para tiempos.
-- Pipeline reproducible: `python -m src.pipeline` descarga → limpia → calcula → escribe
-  `data/processed/*.csv` (+ copia `.parquet` si conviene).
-- App: **Streamlit** (`streamlit run app/app.py`) con mapa (`pydeck` o `folium`), deslizadores
-  y tarjetas. Debe responder al instante: la app solo lee `data/processed/`, nunca recalcula
-  la matriz de tiempos.
-- LLM (extra): solo para convertir texto libre a los campos de entrada; el usuario los
-  confirma. La IA nunca puntúa ni recomienda.
+## Demo (10 min)
 
-## Datasets elaborados que debe generar el pipeline (`data/processed/`)
+Caso conductor (propuesta, `docs/`): **Lucía, auxiliar administrativa en Parla**, sin coche, hijo
+de 2 años, dispuesta a formarse — es el texto de ejemplo que trae la app. Puntos clave:
+deslizador de tiempo de **60 a 75 min** (entra Madrid), tarjetas y «por qué», escuelas infantiles
+en el mapa; en planificación, mapa de desiertos y ranking de mejoras (con T = 60 y 10 min de
+ahorro, mejorar Parla saca de un desierto a sus 7.041 parados); cerrar con la validación (EDM 2018).
+Llevar plan B: el mapa base necesita internet, y la IA también (sin ella funcionan las reglas).
+Probado a 1280×720 (proyector) sin desbordes.
 
-| Fichero | Contenido |
-|---|---|
-| `municipios.csv` | código INE, nombre, centroide, población |
-| `tiempos_tp.csv` | origen, destino, minutos (transporte público, hora punta) |
-| `puestos_municipio_sector.csv` | municipio de trabajo, sector, puestos, estimado (bool) |
-| `parados_municipio_sector.csv` | municipio de residencia, sector, parados |
-| `indicadores_municipio_sector.csv` | municipio, sector, T, puestos_alcanzables, competidores, puestos_por_competidor, tendencia |
-| `balance_empleo.csv` | municipio, puestos, residentes ocupados, balance |
-| `recursos.csv` | tipo (escuela_infantil / fp / servicio_social), nombre, municipio, lat, lon |
-| `afinidad_ocupaciones.csv` (extra) | ocupación A, ocupación B, similitud ESCO |
+## Datasets elaborados (`data/processed/`, documentados en su `README.md`)
 
-Cada fichero documentado en `data/processed/README.md` (columnas, unidades, fuente, fecha,
-qué es estimado). Esto es el entregable 2: debe estar limpio.
+`municipios.csv` (+ `.geojson`), `puestos_municipio_sector.csv`, `parados_municipio_sector.csv`,
+`balance_empleo.csv`, `sectores.csv`, `salario_ocupacion.csv`, `tiempos_tp.csv`,
+`huecos_gtfs.csv`, `estimacion_hueco_gtfs.csv`, `indicadores_municipio_sector.csv`,
+`oportunidad_destino.csv`, `recursos.csv`, `validacion_tiempos_edm.csv`, `validacion.json`,
+`fuentes.json`. Tabla hecha a mano: `data/ref/ocupaciones.csv` (26 ocupaciones, saltos).
 
 ## Reglas de trabajo
 
-- Cuatro personas en paralelo: no tocar a la vez el mismo fichero. Ramas cortas, PR pequeños.
-- No subir a git datos en bruto grandes (`data/raw/` en `.gitignore`); sí `data/processed/`.
+- No subir a git datos en bruto (`data/raw/`, `data/interim/`) ni el `.env`; sí `data/processed/`.
 - Cada cifra que vea el usuario debe poder rastrearse a su fuente y fecha.
 - Escribir en español la interfaz y la documentación.
-- Antes de dar algo por hecho: ejecutar el pipeline y abrir la app.
+- Antes de dar algo por hecho: ejecutar el pipeline, `python -m pytest -q` y abrir la app.
+- Si se toca un CSV o una columna, actualizar `data/processed/README.md` en el mismo cambio.
+- La app debe responder al instante: solo lee `data/processed/`; nunca recalcula la matriz de
+  tiempos (el simulador recalcula el 2SFCA en memoria, que es inmediato).

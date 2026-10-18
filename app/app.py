@@ -2,6 +2,7 @@
 import copy
 import html
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -16,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from src import recomendador as R  # noqa: E402
 from src import simulador as S  # noqa: E402
 from src.config import PROCESSED, UMBRALES_T  # noqa: E402
-from src.texto import interpretar  # noqa: E402
+from src import ia  # noqa: E402
 
 st.set_page_config(page_title="Alcanza · el empleo que está a tu alcance", page_icon="🧭", layout="wide")
 
@@ -76,8 +77,12 @@ div[class*="st-key-panel"] {background: var(--card); border: 1px solid var(--lin
 .alc-paso .d {font-size: .85rem; color: var(--muted); margin-left: 4px;}
 
 /* --- cifras clave --- */
-.alc-stats {display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;}
-@media (max-width: 900px) {.alc-stats {grid-template-columns: 1fr 1fr;}}
+.alc-stats {display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px;
+  margin-bottom: 12px;}
+.alc-stats .alc-stat.main {grid-column: 1 / -1; display: flex; align-items: baseline; flex-wrap: wrap;
+  column-gap: 16px;}
+.alc-stats .alc-stat.main .lbl {flex-basis: 100%;}
+.alc-stat .val {overflow-wrap: anywhere;}
 .alc-stat {background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;}
 .alc-stat .lbl {font-size: .78rem; color: var(--muted); font-weight: 500;}
 .alc-stat .val {font-size: 1.75rem; font-weight: 700; color: var(--ink); line-height: 1.15; margin-top: 4px;
@@ -181,6 +186,14 @@ D = datos(max(p.stat().st_mtime for p in PROCESSED.glob("*.csv")))
 NOM = {k: R.nombre_municipio(v) for k, v in D["nom"].items()}
 INES = sorted(NOM, key=lambda k: NOM[k])
 OCU = D["ocu"].set_index("id")
+
+
+IA_DISPONIBLE = ia.clave() is not None and os.environ.get("ALCANZA_SIN_IA") != "1"
+
+
+@st.cache_data(ttl=3600, show_spinner="Entendiendo tu situación…")
+def entender(texto: str, usar_ia: bool):
+    return ia.interpretar(texto, OCU["ocupacion"].to_dict(), D["nom"], usar_ia=usar_ia and IA_DISPONIBLE)
 
 
 def fmt(x, dec=0):
@@ -288,32 +301,50 @@ def vista_ciudadania():
 
     with st.container(key="panel_situacion"):
         paso(1, "Tu situación", "cuéntalo con tus palabras o rellena los campos")
+        hay_ia = IA_DISPONIBLE
         with st.expander("Escríbelo con tus palabras", icon=":material/edit_note:", expanded=False):
-            txt = st.text_area("Tu situación", label_visibility="collapsed",
+            txt = st.text_area("Tu situación", label_visibility="collapsed", height=100,
                                value="He trabajado 6 años de auxiliar administrativa. Vivo en Parla, no tengo coche y "
                                      "tengo un niño de 2 años. Si merece la pena, volvería a estudiar.")
-            if st.button("Entender mi situación", icon=":material/auto_awesome:", type="primary"):
-                r = interpretar(txt, D["nom"])
+            b1, b2 = st.columns([1, 2.2], vertical_alignment="center")
+            usar_ia = b2.toggle("Entender con IA (Google Gemini)", value=hay_ia, disabled=not hay_ia, key="usar_ia",
+                                help="La IA solo rellena los campos de abajo para que los revises. No puntúa ni "
+                                     "recomienda: eso lo hacen los datos abiertos. Sin IA se usan reglas fijas.")
+            if b1.button("Entender mi situación", icon=":material/auto_awesome:", type="primary"):
+                r = entender(txt, usar_ia)
                 for k in ("ocupacion", "ine", "coche", "hijo", "formacion"):
-                    if r[k] is not None:
-                        ss[k] = r[k]
-                if r["T"]:
-                    ss["T"] = R.snap_T(r["T"])
-                campos = {"ocupacion": "ocupación", "ine": "municipio", "coche": "coche", "hijo": "hijos",
+                    if r.campos[k] is not None:
+                        ss[k] = r.campos[k]
+                if r.campos["T"]:
+                    ss["T"] = R.snap_T(r.campos["T"])
+                ss["interpretacion"] = r
+            r = ss.get("interpretacion")
+            if r is not None:
+                campos = {"ocupacion": "ocupación", "ine": "dónde vives", "coche": "coche", "hijo": "hijos",
                           "formacion": "formación", "T": "tiempo de viaje"}
-                faltan = [v for k, v in campos.items() if r[k] is None]
-                st.success("Esto es lo que hemos entendido. Revísalo abajo y corrige lo que haga falta."
-                           + (f" No lo has mencionado o no lo hemos reconocido: {', '.join(faltan)}." if faltan else ""))
+                faltan = [v for k, v in campos.items() if r.campos[k] is None]
+                origen = (f"Entendido con IA ({r.modelo}, {fmt(r.segundos, 1)} s)" if r.metodo == "ia"
+                          else "Entendido con reglas fijas" + (f": {r.aviso}" if r.aviso else ""))
+                txt_ok = f"**{origen}.** Revisa los campos de abajo y corrige lo que haga falta."
+                if r.ocupacion_aproximada:
+                    txt_ok += (f" No tenemos «{e(r.ocupacion_dicha)}» en la lista: hemos elegido la más parecida, "
+                               f"«{OCU.loc[r.campos['ocupacion'], 'ocupacion']}».")
+                if faltan:
+                    txt_ok += f" No lo has mencionado o no lo hemos reconocido: {', '.join(faltan)}."
+                st.success(txt_ok)
+            st.caption("Con IA, el texto se envía a Google Gemini solo para rellenar los campos y no se guarda. "
+                       if hay_ia else "La IA no está configurada: se usan reglas fijas. ")
 
-        c = st.columns([2, 1.7, 1, 1.25, 1.35], vertical_alignment="bottom")
+        c = st.columns(2)
         c[0].selectbox("Ocupación", list(OCU.index), key="ocupacion", format_func=lambda o: OCU.loc[o, "ocupacion"])
         c[1].selectbox("Vivo en", INES, key="ine", format_func=lambda k: NOM[k])
-        c[2].toggle("Tengo coche", key="coche")
-        c[3].toggle("Hijo/a de 0 a 3 años", key="hijo")
-        c[4].toggle("Dispuesta/o a formarme", key="formacion")
+        c = st.columns(3)
+        c[0].toggle("Tengo coche", key="coche")
+        c[1].toggle("Hijo/a de 0 a 3 años", key="hijo")
+        c[2].toggle("Dispuesta/o a formarme", key="formacion")
 
     st.markdown("")
-    izq, der = st.columns([1, 2.7], gap="large")
+    izq, der = st.columns([1.15, 2.6], gap="medium")
     with izq:
         with st.container(key="panel_ajustes"):
             paso(2, "Ajusta a tu caso")
@@ -575,8 +606,7 @@ def vista_planificacion():
                  else ("flat", "sin cambio"), main=True),
             stat("Parados que salen de un desierto", fmt(U[des0 & ~des1].sum()),
                  f"y {fmt(U[~des0 & des1].sum())} que entran"),
-            stat("Municipios que mejoran su acceso", fmt(int((A1 > A0 * 1.01).sum())), "más de un 1 %"),
-            columnas="1.4fr 1fr 1fr")
+            stat("Municipios que mejoran su acceso", fmt(int((A1 > A0 * 1.01).sum())), "más de un 1 %"))
         if cambio < -0.5:
             st.caption("El acceso relativo puede bajar: al conectarse mejor también llega a destinos con mucha más "
                        "competencia (p. ej., Madrid). El indicador mide puestos por demandante, no volumen.")
@@ -587,15 +617,16 @@ def vista_planificacion():
         rk = ranking_mejoras(sec, T, ahorro, solo_madrid)
         top = rk.head(10)
         st.dataframe(pd.DataFrame({
-            "Municipio": top["municipio"],
-            "Parados que salen de desiertos": top["salen_neto"].round(0).astype(int),
-            "Parados del municipio": top["parados"].round(0).astype(int),
+            "Municipio que mejora": top["municipio"],
+            "Salen de desiertos": top["salen_neto"].round(0).astype(int),
+            "Parados": top["parados"].round(0).astype(int),
             "Acceso antes": top["acceso_antes"], "Acceso después": top["acceso_despues"],
-            "Puestos alcanzables +": (top["puestos_alcanzables_despues"] - top["puestos_alcanzables_antes"]).astype(int),
+            "+ Puestos": (top["puestos_alcanzables_despues"] - top["puestos_alcanzables_antes"]).astype(int),
         }), hide_index=True, use_container_width=True, column_config={
             "Acceso antes": st.column_config.NumberColumn(format="×%.2f"),
             "Acceso después": st.column_config.NumberColumn(format="×%.2f"),
-            "Puestos alcanzables +": st.column_config.NumberColumn(format="+%d")})
+            "+ Puestos": st.column_config.NumberColumn(format="+%d", help="Puestos alcanzables de más desde ese municipio"),
+            "Salen de desiertos": st.column_config.NumberColumn(help="Parados de toda la región que dejan de vivir en un desierto")})
         st.caption(f"Ordenado por parados (de toda la región) que dejan de vivir en un desierto de empleo accesible; "
                    f"a igualdad, por la ganancia de acceso de los parados del propio municipio. El 2SFCA reparte: lo "
                    f"que gana un municipio lo pierde en parte la competencia en otros, por eso no se suma el acceso. "
@@ -716,6 +747,12 @@ municipal, no un error. Desagregar Madrid por distritos queda como mejora futura
 **Sectores:** el paro registrado por municipio solo distingue agricultura, industria, construcción y servicios.
 Servicios se reparte entre tres ramas con la estructura de afiliados residentes del propio municipio
 (*estimado*). Los parados sin empleo anterior se reparten entre sectores pro rata.
+
+**Inteligencia artificial, solo para entender el texto.** Si la persona describe su situación con sus palabras,
+un modelo de lenguaje (Google Gemini) la convierte en los campos del formulario. Su salida está restringida a
+nuestras listas de ocupaciones y de los 179 municipios y se valida antes de usarla; la persona ve y corrige los
+campos. Si el modelo falla se prueba otro, y si no responde ninguno se usan reglas fijas. **La IA no puntúa ni
+recomienda**: todas las cifras y la ordenación salen de los datos abiertos y del método descrito arriba.
 
 **Límites declarados:** no hay ofertas de empleo abiertas por municipio; la afiliación está redondeada a múltiplos
 de 5; el salario es regional por gran grupo de ocupación (Encuesta de Estructura Salarial, cuatrienal); la tabla de

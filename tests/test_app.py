@@ -1,5 +1,9 @@
 """La app arranca y recorre sus tres vistas sin excepciones."""
+import os
+
 from streamlit.testing.v1 import AppTest
+
+os.environ["ALCANZA_SIN_IA"] = "1"   # pruebas deterministas y sin red; la IA se prueba en test_ia.py
 
 
 def _app():
@@ -34,3 +38,18 @@ def test_planificacion_y_datos():
     assert not at.exception
     at.sidebar.radio[0].set_value("Datos y método").run()
     assert not at.exception
+
+
+def test_entrada_con_ia_simulada(monkeypatch):
+    from src import ia
+    monkeypatch.setenv("ALCANZA_SIN_IA", "0")
+    monkeypatch.setattr(ia, "clave", lambda: "falsa")
+    monkeypatch.setattr(ia, "_llamar", lambda *a, **k: {
+        "ocupacion_id": "aux_enfermeria", "ocupacion_dicha": "enfermera", "ocupacion_aproximada": True,
+        "municipio": "Getafe", "coche": True, "hijo_0_3": False, "formacion": None, "tiempo_max_min": 30})
+    at = _app()
+    at.button[0].click().run()
+    assert not at.exception
+    assert at.session_state["ine"] == "28065" and at.session_state["ocupacion"] == "aux_enfermeria"
+    assert at.session_state["coche"] is True and at.session_state["T"] == 30
+    assert any("enfermera" in s.value for s in at.success)
