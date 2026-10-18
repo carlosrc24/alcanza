@@ -194,7 +194,8 @@ def vista_ciudadania():
         p_est = D["pct_est"].get(ss.ine, 0)
         if not ss.coche and ss.ine in D["hueco"] and p_est > 0:
             a.caption(f"⚠ El {fmt(p_est * 100)} % de los tiempos desde {NOM[ss.ine]} son estimados: el GTFS de "
-                      f"autobuses interurbanos del Consorcio está incompleto («Datos parciales») en esta zona.")
+                      f"autobuses del Consorcio está incompleto («Datos parciales») en esta zona, así que los puestos "
+                      f"a tu alcance pueden estar infravalorados.")
 
         # mapa: destinos alcanzables coloreados por puestos por demandante del destino
         t = R.tiempos_desde(D, ss.ine, res["modo"])
@@ -322,6 +323,8 @@ def vista_planificacion():
     q_acc = df["indice_relativo"].quantile(1 / 3)
     q_par = df["tasa_paro_pob"].quantile(2 / 3)
     df["desierto"] = (df["indice_relativo"] <= q_acc) & (df["tasa_paro_pob"] >= q_par) & (df["parados"] >= 50)
+    # sin horarios fiables en la fuente no se clasifica (su acceso sale infravalorado)
+    df["desierto"] &= ~df.index.isin(D["hueco"])
 
     props = {}
     bal = D["bal"].set_index("ine")
@@ -356,6 +359,8 @@ def vista_planificacion():
         st.metric("Parados en desiertos de empleo accesible", fmt(des["parados"].sum()),
                   help="Parados del sector que viven en municipios del tercio con menor accesibilidad y del tercio "
                        "con más paro por habitante.")
+        st.caption(f"{len(D['hueco'])} municipios con horarios de autobús incompletos en la fuente no se "
+                   f"clasifican (borde morado).")
         st.dataframe(des.assign(municipio=[NOM[i] for i in des.index], parados=des["parados"].round(0).astype(int))[
                          ["municipio", "parados", "indice_relativo"]].rename(columns={
                          "municipio": "Municipio", "parados": "Parados", "indice_relativo": "Acceso (×media)"}).round(2),
@@ -423,8 +428,9 @@ parciales»: 13 líneas no traen viajes (entre ellas la concesión de Colmenar V
 relleno (todas las paradas a las 02:00). En los municipios donde al menos el 65 % de las paradas de autobús no tienen
 horario utilizable (Sierra Norte, Colmenar Viejo, Las Vegas…, borde morado en el mapa), el tiempo de cada par es el
 menor entre r5py y una estimación: mediana condicionada al tiempo en coche, ajustada sobre los pares bien cubiertos
-por tipo de par (con Madrid, con ferrocarril o solo autobús; error absoluto mediano 11–19 min). Es conservadora en
-trayectos cortos. Esos pares figuran como `estimado_hueco_gtfs` en `tiempos_tp.csv`.
+por tipo de par (con Madrid, con ferrocarril o solo autobús; error absoluto mediano 11–19 min). La estimación
+solo añade destinos a partir de unos 75–90 min, así que para estos municipios el acceso es una **cota inferior**: no se
+clasifican como desiertos y la app lo avisa. Esos pares figuran como `estimado_hueco_gtfs` en `tiempos_tp.csv`.
 
 **Madrid capital es un solo destino** situado en su núcleo (mediana de sus paradas). Al subir el tiempo máximo por
 encima del que se tarda en llegar a él, se suman de golpe unos 2,9 millones de puestos: es un salto real del modelo

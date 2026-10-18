@@ -117,8 +117,9 @@ municipios hay otras 23 líneas así. Un municipio se marca afectado (`huecos_gt
 el 65 % de sus paradas de autobús no tienen ningún viaje con horario real. En los pares con un
 extremo afectado, `min_tp` es el menor entre el valor de r5py y una estimación: regresión cuantílica
 (mediana) `t_tp = a + b · t_coche` ajustada por tipo de par sobre los pares no afectados
-(coeficientes y error en `estimacion_hueco_gtfs.csv`). La estimación es conservadora en trayectos
-cortos entre municipios vecinos.
+(coeficientes y error en `estimacion_hueco_gtfs.csv`). La estimación solo añade destinos a partir de
+unos 75–90 min, así que en los municipios afectados el acceso calculado es una **cota inferior**:
+la app no los clasifica como desiertos de empleo y avisa al usuario.
 
 **Madrid capital es un único destino**, situado en su núcleo (mediana de sus paradas). Cuando el
 umbral T supera el tiempo hasta ese punto se suman de golpe unos 2,9 millones de puestos (p. ej.,
