@@ -1,5 +1,6 @@
 """Alcanza — el empleo que está a tu alcance.   streamlit run app/app.py"""
 import copy
+import html
 import json
 import sys
 from pathlib import Path
@@ -16,35 +17,140 @@ from src import recomendador as R  # noqa: E402
 from src.config import PROCESSED, UMBRALES_T  # noqa: E402
 from src.texto import interpretar  # noqa: E402
 
-st.set_page_config(page_title="Alcanza", page_icon="🧭", layout="wide")
+st.set_page_config(page_title="Alcanza · el empleo que está a tu alcance", page_icon="🧭", layout="wide")
 
+# ------------------------------------------------------------------------------- estética
+# Paleta: verde azulado (marca, accesibilidad), ámbar (salto corto), violeta (formación),
+# rosa (escuelas infantiles), rojo (desiertos). Fondo cálido y tarjetas blancas.
 CSS = """
 <style>
-.block-container {padding-top: 1.6rem; max-width: 1400px;}
-h1, h2, h3 {letter-spacing: -0.01em;}
-.alc-hero {font-size: 2.0rem; font-weight: 700; margin: 0 0 .2rem 0;}
-.alc-sub {color: #4b5563; margin-bottom: 1rem;}
-.alc-card {border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px 18px; background: #ffffff;
-           height: 100%; box-shadow: 0 1px 2px rgba(0,0,0,.04);}
-.alc-card .tipo {font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: #0f766e; text-transform: uppercase;}
-.alc-card.corto .tipo {color: #b45309;}
-.alc-card.form .tipo {color: #6d28d9;}
-.alc-card .titulo {font-size: 1.15rem; font-weight: 700; margin: 4px 0 2px 0; color: #111827;}
-.alc-card .lugar {color: #374151; margin-bottom: 8px;}
-.alc-card .chips span {display: inline-block; background: #f3f4f6; border-radius: 999px; padding: 2px 10px;
-           margin: 2px 4px 2px 0; font-size: .82rem; color: #111827;}
-.alc-card .porque {font-size: .9rem; color: #374151; margin-top: 8px;}
-.alc-big {font-size: 2.2rem; font-weight: 700; color: #0f766e; line-height: 1.1;}
-.alc-note {font-size: .8rem; color: #6b7280;}
-.alc-est {font-size: .72rem; background: #fef3c7; color: #92400e; border-radius: 6px; padding: 1px 6px;}
-@media (prefers-color-scheme: dark) {
-  .alc-card {background: #111827; border-color: #374151;}
-  .alc-card .titulo {color: #f9fafb;} .alc-card .lugar, .alc-card .porque {color: #d1d5db;}
-  .alc-card .chips span {background: #1f2937; color: #e5e7eb;} .alc-sub {color: #9ca3af;}
+:root {
+  --ink: #14213d; --muted: #5b6577; --line: #e3e6de; --bg: #f6f7f3; --card: #ffffff;
+  --teal: #0f766e; --teal-d: #0b4f4a; --teal-l: #e6f4f1; --amber: #c2410c; --amber-l: #fff4e6;
+  --violet: #6d28d9; --violet-l: #f3efff; --rose: #db2777; --red: #dc2626; --red-l: #fef2f2;
+  --serif: "Fraunces", Georgia, serif;
 }
+.block-container {padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1380px;}
+header[data-testid="stHeader"] {background: transparent;}
+.stAppDeployButton, [data-testid="stStatusWidget"] {display: none;}
+
+/* --- barra lateral --- */
+.alc-brand {display: flex; align-items: center; gap: 12px; margin: 4px 0 18px 0;}
+.alc-brand .nombre {font-family: var(--serif); font-size: 1.7rem; font-weight: 700; color: #fff; line-height: 1;}
+.alc-brand .lema {font-size: .82rem; color: #a7d8cf; margin-top: 4px;}
+section[data-testid="stSidebar"] div[role="radiogroup"] {gap: 4px;}
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+  padding: 9px 12px; border-radius: 12px; width: 100%; transition: background .15s;}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {background: rgba(255,255,255,.06);}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked) {background: rgba(94,234,212,.14);}
+.alc-side-note {font-size: .78rem; color: #a7c9c2; line-height: 1.45; border-top: 1px solid #1d5f58;
+  padding-top: 14px; margin-top: 8px;}
+.alc-side-note b {color: #e7f3ef;}
+.alc-fuentes {display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;}
+.alc-fuentes span {font-size: .7rem; background: rgba(255,255,255,.08); color: #d5ece7; border-radius: 999px;
+  padding: 2px 9px;}
+
+/* --- cabecera de cada vista: anillos de isócrona como motivo --- */
+.alc-hero {position: relative; overflow: hidden; border-radius: 22px; padding: 30px 34px 28px 34px;
+  margin-bottom: 18px; color: #fff;
+  background: linear-gradient(118deg, #0b4f4a 0%, #0f766e 55%, #14907f 100%);}
+.alc-hero::after {content: ""; position: absolute; right: -90px; top: -120px; width: 460px; height: 460px;
+  border-radius: 50%; opacity: .22;
+  background: repeating-radial-gradient(circle, transparent 0 34px, rgba(255,255,255,.9) 35px 36px);}
+.alc-hero::before {content: ""; position: absolute; right: 140px; top: 96px; width: 12px; height: 12px;
+  border-radius: 50%; background: #fbbf24; box-shadow: 0 0 0 6px rgba(251,191,36,.25);}
+.alc-hero .kicker {font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: #a7f3d0;
+  font-weight: 600;}
+.alc-hero .titulo {font-family: var(--serif); font-size: 2.35rem; font-weight: 700; line-height: 1.1;
+  margin: 6px 0 8px 0; max-width: 780px;}
+.alc-hero .sub {font-size: 1.02rem; color: #d7f0ea; max-width: 720px;}
+
+/* --- paneles --- */
+div[class*="st-key-panel"] {background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 18px 20px 8px 20px; box-shadow: 0 1px 2px rgba(20,33,61,.04), 0 8px 24px -18px rgba(20,33,61,.25);}
+.alc-paso {display: flex; align-items: center; gap: 10px; margin: 0 0 10px 0;}
+.alc-paso .n {width: 26px; height: 26px; border-radius: 50%; background: var(--teal); color: #fff;
+  display: grid; place-items: center; font-size: .8rem; font-weight: 700; flex: none;}
+.alc-paso .t {font-family: var(--serif); font-size: 1.22rem; font-weight: 600; color: var(--ink);}
+.alc-paso .d {font-size: .85rem; color: var(--muted); margin-left: 4px;}
+
+/* --- cifras clave --- */
+.alc-stats {display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;}
+@media (max-width: 900px) {.alc-stats {grid-template-columns: 1fr 1fr;}}
+.alc-stat {background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px;}
+.alc-stat .lbl {font-size: .78rem; color: var(--muted); font-weight: 500;}
+.alc-stat .val {font-size: 1.75rem; font-weight: 700; color: var(--ink); line-height: 1.15; margin-top: 4px;
+  font-variant-numeric: tabular-nums;}
+.alc-stat .sub {font-size: .8rem; color: var(--muted); margin-top: 2px;}
+.alc-stat.main {background: linear-gradient(135deg, #e6f4f1, #f4fbf9); border-color: #cfe9e3;}
+.alc-stat.main .val {font-size: 2.3rem; color: var(--teal-d);}
+.alc-pill {display: inline-block; font-size: .74rem; font-weight: 600; border-radius: 999px; padding: 2px 9px;
+  margin-top: 6px;}
+.alc-pill.up {background: #dcfce7; color: #166534;} .alc-pill.down {background: #fee2e2; color: #991b1b;}
+.alc-pill.flat {background: #eef1ec; color: #475569;}
+
+/* --- avisos y leyendas --- */
+.alc-aviso {display: flex; gap: 10px; align-items: flex-start; background: #fff8eb; border: 1px solid #fde3b0;
+  color: #7c4a03; border-radius: 14px; padding: 10px 14px; font-size: .86rem; margin-bottom: 12px;}
+.alc-leyenda {display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--muted);
+  margin: 8px 2px 0 2px;}
+.alc-leyenda span {display: inline-flex; align-items: center; gap: 6px;}
+.alc-leyenda i {display: inline-block; width: 14px; height: 10px; border-radius: 3px;}
+.alc-leyenda i.borde {background: transparent !important; border: 2.5px solid; height: 10px;}
+.alc-leyenda i.punto {width: 10px; height: 10px; border-radius: 50%;}
+.alc-leyenda i.rampa {width: 46px; background: linear-gradient(90deg, #d5efe9, #0b4f4a);}
+iframe, [data-testid="stDeckGlJsonChart"] {border-radius: 16px; overflow: hidden;}
+
+/* --- tarjetas de caminos --- */
+.alc-seccion {font-family: var(--serif); font-size: 1.6rem; font-weight: 700; color: var(--ink);
+  margin: 26px 0 2px 0;}
+.alc-seccion-sub {color: var(--muted); font-size: .92rem; margin-bottom: 14px;}
+.alc-card {--c: var(--teal); --cl: var(--teal-l); position: relative; background: var(--card);
+  border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 16px 18px; min-height: 270px;
+  box-shadow: 0 1px 2px rgba(20,33,61,.04), 0 12px 28px -22px rgba(20,33,61,.35); overflow: hidden;}
+.alc-card::before {content: ""; position: absolute; left: 0; top: 0; right: 0; height: 5px; background: var(--c);}
+.alc-card.corto {--c: var(--amber); --cl: var(--amber-l);}
+.alc-card.form {--c: var(--violet); --cl: var(--violet-l);}
+.alc-card .top {display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;}
+.alc-card .tipo {display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--c); background: var(--cl);
+  border-radius: 999px; padding: 3px 10px;}
+.alc-card .titulo {font-family: var(--serif); font-size: 1.32rem; font-weight: 600; line-height: 1.2;
+  margin: 10px 0 4px 0; color: var(--ink);}
+.alc-card .lugar {display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .9rem;}
+.alc-card .chips {margin-top: 12px;}
+.alc-card .chips span {display: inline-block; background: #f3f5f0; border-radius: 999px; padding: 3px 10px;
+  margin: 0 5px 6px 0; font-size: .8rem; color: var(--ink); font-weight: 500;}
+.alc-card .porque {font-size: .9rem; color: #334155; margin-top: 6px; line-height: 1.5;}
+.alc-ring {width: 58px; height: 58px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), #ebeee7 0);}
+.alc-ring span {width: 46px; height: 46px; border-radius: 50%; background: #fff; display: grid;
+  place-items: center; font-weight: 700; font-size: 1.05rem; color: var(--ink); line-height: 1;}
+.alc-ring small {display: block; font-size: .55rem; color: var(--muted); font-weight: 500;}
+.alc-card.bloqueada {opacity: .5; filter: grayscale(.6);}
+
+/* --- pie --- */
+.alc-pie {font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 28px;
+  padding-top: 14px; line-height: 1.55;}
+.alc-est {font-size: .7rem; background: #fef3c7; color: #92400e; border-radius: 6px; padding: 1px 6px;
+  font-weight: 600;}
+
+/* --- datos y método --- */
+.alc-formula {background: #0e3b37; color: #e7f3ef; border-radius: 14px; padding: 14px 18px;
+  font-family: ui-monospace, Consolas, monospace; font-size: .9rem; line-height: 1.7; margin: 8px 0 12px 0;}
+.alc-formula b {color: #5eead4; font-weight: 600;}
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
+
+LOGO = """<svg viewBox="0 0 44 44" width="40" height="40" aria-hidden="true">
+<circle cx="22" cy="22" r="19" fill="none" stroke="#5eead4" stroke-width="3" stroke-linecap="round"
+ stroke-dasharray="88 32" transform="rotate(-50 22 22)"/>
+<circle cx="22" cy="22" r="11" fill="none" stroke="#99f6e4" stroke-width="2.5" opacity=".65"/>
+<circle cx="22" cy="22" r="4" fill="#fbbf24"/></svg>"""
+PIN = ('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
+       'aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/>'
+       '<circle cx="12" cy="9.5" r="2.5"/></svg>')
 
 
 # ------------------------------------------------------------------------------- datos
@@ -82,12 +188,46 @@ def fmt(x, dec=0):
     return f"{x:,.{dec}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+def e(x) -> str:
+    return html.escape(str(x))
+
+
 def rampa(v, lo, hi):
     """Verde azulado secuencial (claro → oscuro)."""
-    a = np.array([204, 236, 230])
-    b = np.array([1, 102, 94])
+    a = np.array([213, 239, 233])
+    b = np.array([11, 79, 74])
     f = 0 if hi <= lo else float(np.clip((v - lo) / (hi - lo), 0, 1))
     return [int(c) for c in a + (b - a) * f]
+
+
+def hero(kicker, titulo, sub):
+    st.markdown(f'<div class="alc-hero"><div class="kicker">{kicker}</div><div class="titulo">{titulo}</div>'
+                f'<div class="sub">{sub}</div></div>', unsafe_allow_html=True)
+
+
+def paso(n, titulo, detalle=""):
+    st.markdown(f'<div class="alc-paso"><div class="n">{n}</div><div class="t">{titulo}</div>'
+                f'<div class="d">{detalle}</div></div>', unsafe_allow_html=True)
+
+
+def stat(lbl, val, sub="", pill=None, main=False, ayuda=""):
+    p = f'<div class="alc-pill {pill[0]}">{pill[1]}</div>' if pill else ""
+    return (f'<div class="alc-stat{" main" if main else ""}" title="{e(ayuda)}"><div class="lbl">{lbl}</div>'
+            f'<div class="val">{val}</div>{f"<div class=sub>{sub}</div>" if sub else ""}{p}</div>')
+
+
+def stats(*bloques, columnas=None):
+    estilo = f' style="grid-template-columns:{columnas}"' if columnas else ""
+    st.markdown(f'<div class="alc-stats"{estilo}>{"".join(bloques)}</div>', unsafe_allow_html=True)
+
+
+def leyenda(items):
+    """items: (tipo, color css, texto), tipo ∈ {relleno, borde, punto, rampa}."""
+    partes = []
+    for tipo, color, txt in items:
+        cls = "" if tipo == "relleno" else tipo
+        partes.append(f'<span><i class="{cls}" style="background:{color};border-color:{color}"></i>{txt}</span>')
+    st.markdown(f'<div class="alc-leyenda">{"".join(partes)}</div>', unsafe_allow_html=True)
 
 
 def mapa(features_props, puntos=None, centro=(40.42, -3.70), zoom=8.3, alto=520):
@@ -96,7 +236,8 @@ def mapa(features_props, puntos=None, centro=(40.42, -3.70), zoom=8.3, alto=520)
         f["properties"].update(features_props.get(f["properties"]["ine"], {}))
     capas = [pdk.Layer("GeoJsonLayer", geo, pickable=True, stroked=True, filled=True,
                        get_fill_color="properties.fill", get_line_color="properties.line",
-                       get_line_width="properties.lw", line_width_units="'pixels'", line_width_min_pixels=0.5)]
+                       get_line_width="properties.lw", line_width_units="'pixels'", line_width_min_pixels=0.5,
+                       auto_highlight=True, highlight_color=[251, 191, 36, 90])]
     # bordes destacados encima, para que los polígonos vecinos no los tapen
     resaltados = [f for f in geo["features"] if f["properties"].get("lw", 0) >= 2]
     if resaltados:
@@ -105,29 +246,36 @@ def mapa(features_props, puntos=None, centro=(40.42, -3.70), zoom=8.3, alto=520)
                                get_line_width=3, line_width_units="'pixels'", line_width_min_pixels=3))
     if puntos is not None and len(puntos):
         capas.append(pdk.Layer("ScatterplotLayer", puntos, get_position=["lon", "lat"], get_fill_color="color",
-                               get_radius=170, radius_min_pixels=3, pickable=True))
-    tooltip = {"html": "{tip}", "style": {"backgroundColor": "#111827", "color": "white", "fontSize": "13px"}}
+                               get_radius=170, radius_min_pixels=4, stroked=True, get_line_color=[255, 255, 255],
+                               line_width_min_pixels=1.5, pickable=True))
+    tooltip = {"html": "{tip}", "style": {"backgroundColor": "#14213d", "color": "white", "fontSize": "13px",
+                                          "fontFamily": "Inter, sans-serif", "borderRadius": "10px",
+                                          "padding": "8px 10px", "lineHeight": "1.45"}}
     st.pydeck_chart(pdk.Deck(layers=capas, initial_view_state=pdk.ViewState(latitude=centro[0], longitude=centro[1],
                                                                            zoom=zoom),
                              map_style=pdk.map_styles.CARTO_LIGHT, tooltip=tooltip), height=alto)
 
 
 # ------------------------------------------------------------------------------- navegación
-st.sidebar.markdown("## 🧭 Alcanza")
-st.sidebar.caption("El empleo que está a tu alcance")
-vista = st.sidebar.radio("Vista", ["Busco empleo", "Orientación y planificación", "Datos y método"],
-                         label_visibility="collapsed")
-st.sidebar.markdown("---")
-st.sidebar.caption(
-    "MAD Open Data Challenge 2026 · Datos abiertos de la Comunidad de Madrid y del Consorcio Regional de "
-    "Transportes. Prototipo: las cifras son estimaciones para orientar, no ofertas de empleo.")
+VISTAS = {"Busco empleo": ":material/work_outline:", "Orientación y planificación": ":material/map:",
+          "Datos y método": ":material/dataset:"}
+st.sidebar.markdown(f'<div class="alc-brand">{LOGO}<div><div class="nombre">Alcanza</div>'
+                    f'<div class="lema">el empleo que está a tu alcance</div></div></div>', unsafe_allow_html=True)
+vista = st.sidebar.radio("Vista", list(VISTAS), label_visibility="collapsed",
+                         format_func=lambda v: f"{VISTAS[v]}  {v}")
+st.sidebar.markdown(
+    '<div class="alc-side-note"><b>MAD Open Data Challenge 2026.</b> Prototipo con datos abiertos de la '
+    'Comunidad de Madrid y del Consorcio Regional de Transportes. Las cifras orientan: no son ofertas de empleo.'
+    '<div class="alc-fuentes"><span>Afiliación SS</span><span>Paro registrado</span><span>GTFS Consorcio</span>'
+    '<span>Renfe Cercanías</span><span>Centros educativos</span><span>Servicios sociales</span>'
+    '<span>OpenStreetMap</span></div></div>', unsafe_allow_html=True)
 
 
 # =============================================================================== CIUDADANÍA
 def vista_ciudadania():
-    st.markdown('<div class="alc-hero">¿Qué empleo tienes a tu alcance?</div>', unsafe_allow_html=True)
-    st.markdown('<div class="alc-sub">Cuéntanos tu situación con tus palabras o rellena los campos. '
-                'No guardamos nada.</div>', unsafe_allow_html=True)
+    hero("Para quien busca empleo", "¿Qué empleo tienes a tu alcance?",
+         "Te decimos cuánto trabajo de lo tuyo puedes alcanzar de verdad en transporte público, con cuánta gente "
+         "compites por él y qué caminos parecidos te abren más puertas. No guardamos nada.")
 
     ss = st.session_state
     ss.setdefault("ocupacion", "aux_admin")
@@ -137,41 +285,45 @@ def vista_ciudadania():
     ss.setdefault("formacion", True)
     ss.setdefault("T", 45)
 
-    with st.expander("✍️ Escríbelo con tus palabras", expanded=False):
-        txt = st.text_area("Tu situación", label_visibility="collapsed",
-                           value="He trabajado 6 años de auxiliar administrativa. Vivo en Parla, no tengo coche y "
-                                 "tengo un niño de 2 años. Si merece la pena, volvería a estudiar.")
-        if st.button("Entender mi situación"):
-            r = interpretar(txt, D["nom"])
-            for k in ("ocupacion", "ine", "coche", "hijo", "formacion"):
-                if r[k] is not None:
-                    ss[k] = r[k]
-            if r["T"]:
-                ss["T"] = R.snap_T(r["T"])
-            st.success("Esto es lo que hemos entendido. Revísalo abajo y corrige lo que haga falta.")
+    with st.container(key="panel_situacion"):
+        paso(1, "Tu situación", "cuéntalo con tus palabras o rellena los campos")
+        with st.expander("Escríbelo con tus palabras", icon=":material/edit_note:", expanded=False):
+            txt = st.text_area("Tu situación", label_visibility="collapsed",
+                               value="He trabajado 6 años de auxiliar administrativa. Vivo en Parla, no tengo coche y "
+                                     "tengo un niño de 2 años. Si merece la pena, volvería a estudiar.")
+            if st.button("Entender mi situación", icon=":material/auto_awesome:", type="primary"):
+                r = interpretar(txt, D["nom"])
+                for k in ("ocupacion", "ine", "coche", "hijo", "formacion"):
+                    if r[k] is not None:
+                        ss[k] = r[k]
+                if r["T"]:
+                    ss["T"] = R.snap_T(r["T"])
+                st.success("Esto es lo que hemos entendido. Revísalo abajo y corrige lo que haga falta.")
 
-    c = st.columns([2.2, 2, 1, 1.1, 1.1])
-    c[0].selectbox("Ocupación", list(OCU.index), key="ocupacion", format_func=lambda o: OCU.loc[o, "ocupacion"])
-    c[1].selectbox("Vivo en", INES, key="ine", format_func=lambda k: NOM[k])
-    c[2].toggle("Tengo coche", key="coche")
-    c[3].toggle("Hijo/a de 0 a 3 años", key="hijo")
-    c[4].toggle("Dispuesta/o a formarme", key="formacion")
+        c = st.columns([2, 1.7, 1, 1.25, 1.35], vertical_alignment="bottom")
+        c[0].selectbox("Ocupación", list(OCU.index), key="ocupacion", format_func=lambda o: OCU.loc[o, "ocupacion"])
+        c[1].selectbox("Vivo en", INES, key="ine", format_func=lambda k: NOM[k])
+        c[2].toggle("Tengo coche", key="coche")
+        c[3].toggle("Hijo/a de 0 a 3 años", key="hijo")
+        c[4].toggle("Dispuesta/o a formarme", key="formacion")
 
-    izq, der = st.columns([1, 2.6], gap="large")
+    st.markdown("")
+    izq, der = st.columns([1, 2.7], gap="large")
     with izq:
-        st.markdown("##### Ajusta a tu caso")
-        T = st.select_slider("Tiempo máximo de viaje (solo ida)", options=UMBRALES_T, key="T",
-                             format_func=lambda v: f"{v} min")
-        st.caption("Importancia de cada criterio")
-        pesos = {
-            "competencia": st.slider("Poca competencia (puestos por demandante)", 0, 5, 3),
-            "volumen": st.slider("Muchos puestos alcanzables", 0, 5, 2),
-            "tendencia": st.slider("Sector que crece", 0, 5, 1),
-            "salario": st.slider("Salario", 0, 5, 1),
-            "conciliacion": st.slider("Conciliación (escuelas infantiles)", 0, 5, 2 if ss.hijo else 0,
-                                      disabled=not ss.hijo),
-            "esfuerzo": st.slider("Evitar formación larga", 0, 5, 1 if ss.formacion else 4),
-        }
+        with st.container(key="panel_ajustes"):
+            paso(2, "Ajusta a tu caso")
+            T = st.select_slider("Tiempo máximo de viaje (solo ida)", options=UMBRALES_T, key="T",
+                                 format_func=lambda v: f"{v} min")
+            st.caption("¿Qué te importa más?")
+            pesos = {
+                "competencia": st.slider("Poca competencia (puestos por demandante)", 0, 5, 3),
+                "volumen": st.slider("Muchos puestos alcanzables", 0, 5, 2),
+                "tendencia": st.slider("Sector que crece", 0, 5, 1),
+                "salario": st.slider("Salario", 0, 5, 1),
+                "conciliacion": st.slider("Conciliación (escuelas infantiles)", 0, 5, 2 if ss.hijo else 0,
+                                          disabled=not ss.hijo),
+                "esfuerzo": st.slider("Evitar formación larga", 0, 5, 1 if ss.formacion else 4),
+            }
 
     res = R.recomendar(D, ss.ocupacion, ss.ine, coche=ss.coche, hijo=ss.hijo, formacion=ss.formacion,
                        T=T, pesos=pesos)
@@ -179,23 +331,31 @@ def vista_ciudadania():
     directo = tarjetas[0]
     ind = directo.indicadores
     modo_txt = "en coche" if ss.coche else "en transporte público"
+    sector_txt = directo.nombre_sector.split(" (")[0].lower()
 
     with der:
-        a, b, c2 = st.columns([1.3, 1, 1])
-        a.markdown(f"Desde **{NOM[ss.ine]}**, {modo_txt}, en **{T} min**")
-        a.markdown(f'<div class="alc-big">{fmt(ind["puestos_alcanzables"])}</div>'
-                   f'puestos de tu sector ({directo.nombre_sector.split(" (")[0].lower()})', unsafe_allow_html=True)
-        b.metric("Puestos por demandante", fmt(ind["puestos_por_competidor"], 1),
-                 help="Método 2SFCA: puestos de cada destino repartidos entre los parados del sector que pueden "
-                      "llegar a él, sumados sobre los destinos que tú alcanzas.")
-        c2.metric("Frente a la media regional", f"×{fmt(ind['indice_relativo'], 2)}",
-                  delta=f"{fmt(ind['var_interanual'] * 100, 1)} % empleo en un año"
-                  if not pd.isna(ind["var_interanual"]) else None)
+        rel = ind["indice_relativo"]
+        pill_rel = (("flat", "en la media") if 0.9 <= rel <= 1.1 else
+                    ("up", f"{fmt(rel, 1)} veces la media") if rel > 1.1 else
+                    ("down", f"{fmt((1 - rel) * 100)} % menos que la media"))
+        v = ind["var_interanual"]
+        stats(
+            stat("Puestos de tu sector a tu alcance", fmt(ind["puestos_alcanzables"]),
+                 f"{e(sector_txt.capitalize())}<br>desde {e(NOM[ss.ine])} · ≤ {T} min {modo_txt}", main=True),
+            stat("Puestos por demandante", fmt(ind["puestos_por_competidor"], 1), "método 2SFCA",
+                 ayuda="Puestos de cada destino repartidos entre los parados del sector que pueden llegar a él, "
+                       "sumados sobre los destinos que tú alcanzas."),
+            stat("Frente a la media regional", f"×{fmt(rel, 2)}", pill=pill_rel),
+            stat("Variación en un año","—" if pd.isna(v) else f"{'+' if v >= 0 else '−'}{fmt(abs(v) * 100, 1)} %",
+                 pill=None if pd.isna(v) else (("up", "sube") if v > 0.02 else ("down", "baja") if v < -0.02
+                                                else ("flat", "estable"))),
+        )
         p_est = D["pct_est"].get(ss.ine, 0)
         if not ss.coche and ss.ine in D["hueco"] and p_est > 0:
-            a.caption(f"⚠ El {fmt(p_est * 100)} % de los tiempos desde {NOM[ss.ine]} son estimados: el GTFS de "
-                      f"autobuses del Consorcio está incompleto («Datos parciales») en esta zona, así que los puestos "
-                      f"a tu alcance pueden estar infravalorados.")
+            st.markdown(f'<div class="alc-aviso"><span>⚠</span><div>El {fmt(p_est * 100)} % de los tiempos desde '
+                        f'{e(NOM[ss.ine])} son estimados: el GTFS de autobuses del Consorcio está incompleto '
+                        f'(«Datos parciales») en esta zona, así que los puestos a tu alcance pueden estar '
+                        f'infravalorados.</div></div>', unsafe_allow_html=True)
 
         # mapa: destinos alcanzables coloreados por puestos por demandante del destino
         t = R.tiempos_desde(D, ss.ine, res["modo"])
@@ -210,8 +370,9 @@ def vista_ciudadania():
             m = t.get(ine, np.nan)
             r = dd.loc[ine] if ine in dd.index else None
             ok = ine in alc
-            fill = rampa(r["puestos_por_competidor_destino"], lo, hi) + [200] if ok and r is not None else [229, 231, 235, 110]
-            line = [17, 24, 39] if ine == ss.ine else ([234, 88, 12] if ine in top else [255, 255, 255])
+            fill = rampa(r["puestos_por_competidor_destino"], lo, hi) + [215] if ok and r is not None \
+                else [226, 228, 221, 120]
+            line = [20, 33, 61] if ine == ss.ine else ([217, 119, 6] if ine in top else [255, 255, 255])
             props[ine] = {"fill": fill, "line": line, "lw": 3 if (ine == ss.ine or ine in top) else 0.5,
                           "tip": f"<b>{NOM[ine]}</b><br>{fmt(m)} min {modo_txt}<br>"
                                  f"{fmt(r['puestos'] if r is not None else 0)} puestos del sector<br>"
@@ -220,52 +381,59 @@ def vista_ciudadania():
         pts = []
         if ss.hijo:
             ei = D["rec"][(D["rec"]["tipo"] == "escuela_infantil") & D["rec"]["ine"].isin(set(top) | {ss.ine})].copy()
-            ei["color"] = [[219, 39, 119, 200]] * len(ei)
+            ei["color"] = [[219, 39, 119, 220]] * len(ei)
             ei["tip"] = "👶 " + ei["nombre"] + "<br>" + ei["subtipo"] + " · " + ei["titularidad"]
             pts.append(ei)
         if ss.formacion and len(tarjetas) > 2:
             fp = tarjetas[2].centros_formacion.copy()
             if len(fp):
-                fp["color"] = [[109, 40, 217, 230]] * len(fp)
+                fp["color"] = [[109, 40, 217, 235]] * len(fp)
                 fp["tip"] = "🎓 " + fp["nombre"] + "<br>" + fp["subtipo"]
                 pts.append(fp)
         puntos = pd.concat(pts)[["lon", "lat", "color", "tip"]] if pts else None
         o = D["mun"].set_index("ine").loc[ss.ine]
-        mapa(props, puntos, centro=(o["lat"], o["lon"]), zoom=9.3 if T <= 45 else 8.6, alto=430)
-        st.markdown('<span class="alc-note">Más oscuro = más puestos por demandante en ese municipio · '
-                    'gris = fuera de tu tiempo · borde naranja = destinos recomendados'
-                    + (' · rosa = escuelas infantiles' if ss.hijo else '')
-                    + (' · morado = centros de formación' if ss.formacion else '') + '</span>',
-                    unsafe_allow_html=True)
+        mapa(props, puntos, centro=(o["lat"], o["lon"]), zoom=9.3 if T <= 45 else 8.6, alto=440)
+        leyenda([("rampa", "", "puestos por demandante en el destino"),
+                 ("relleno", "#e2e4dd", "fuera de tu tiempo"),
+                 ("borde", "#14213d", "donde vives"),
+                 ("borde", "#d97706", "destinos recomendados")]
+                + ([("punto", "#db2777", "escuelas infantiles")] if ss.hijo else [])
+                + ([("punto", "#6d28d9", "centros de formación")] if ss.formacion else []))
 
-    st.markdown("### Tus tres caminos")
+    st.markdown('<div class="alc-seccion">Tus tres caminos</div>'
+                '<div class="alc-seccion-sub">Ordenados con tus prioridades. Abre «Por qué y cómo» para ver de dónde '
+                'sale cada puntuación y dónde buscar.</div>', unsafe_allow_html=True)
     cols = st.columns(3, gap="medium")
-    estilos = {"directo": ("", "Trabajo directo"), "salto_corto": ("corto", "Salto corto"),
-               "salto_formacion": ("form", "Salto con formación")}
+    estilos = {"directo": ("", "Trabajo directo", "◎"), "salto_corto": ("corto", "Salto corto", "↗"),
+               "salto_formacion": ("form", "Salto con formación", "✦")}
     for col, tj in zip(cols, tarjetas):
-        cls, nombre_tipo = estilos[tj.tipo]
+        cls, nombre_tipo, icono = estilos[tj.tipo]
         d0 = tj.destinos.iloc[0] if len(tj.destinos) else None
-        lugar = f"{d0['nombre']} · {int(d0['minutos'])} min" if d0 is not None else "Sin destinos en ese tiempo"
+        lugar = f"{e(d0['nombre'])} · {int(d0['minutos'])} min" if d0 is not None else "Sin destinos en ese tiempo"
         i = tj.indicadores
         sal = R.salario(D, OCU.loc[tj.ocupacion_id, "cno11"])
         chips = [f"{fmt(i['puestos_por_competidor'], 1)} puestos/demandante",
                  {"sube": "↑ sector crece", "baja": "↓ sector cae", "estable": "→ sector estable"}.get(i["tendencia"], ""),
                  f"~{fmt(sal / 1000, 1)} k€/año" if sal else ""]
         bloqueada = tj.tipo == "salto_formacion" and not ss.formacion
+        punt = int(round(tj.puntuacion * 100))
         with col:
-            st.markdown(f"""<div class="alc-card {cls}" style="opacity:{.45 if bloqueada else 1}">
-              <div class="tipo">{nombre_tipo} · {fmt(tj.puntuacion * 100)} / 100</div>
-              <div class="titulo">{tj.ocupacion}</div>
-              <div class="lugar">{lugar}</div>
+            st.markdown(f"""<div class="alc-card {cls}{' bloqueada' if bloqueada else ''}">
+              <div class="top"><div><span class="tipo">{icono} {nombre_tipo}</span>
+                <div class="titulo">{e(tj.ocupacion)}</div>
+                <div class="lugar">{PIN}{lugar}</div></div>
+                <div class="alc-ring" style="--p:{punt}" title="Puntuación con tus prioridades">
+                  <span><div>{punt}<small>/100</small></div></span></div></div>
               <div class="chips">{''.join(f'<span>{c}</span>' for c in chips if c)}</div>
-              <div class="porque">{tj.resumen}</div></div>""", unsafe_allow_html=True)
+              <div class="porque">{e(tj.resumen)}</div></div>""", unsafe_allow_html=True)
             if bloqueada:
                 st.caption("Activa «Dispuesta/o a formarme» para valorar este camino.")
-            with st.expander("Por qué y cómo"):
+            with st.expander("Por qué y cómo", icon=":material/insights:"):
                 st.markdown(tj.por_que)
                 contrib = pd.DataFrame({"criterio": [R.ETIQUETAS[k] for k in tj.contribuciones],
                                         "aporte": [v * 100 for v in tj.contribuciones.values()]})
-                st.bar_chart(contrib.set_index("criterio"), horizontal=True, height=210, color="#0f766e")
+                color = {"directo": "#0f766e", "salto_corto": "#c2410c", "salto_formacion": "#6d28d9"}[tj.tipo]
+                st.bar_chart(contrib.set_index("criterio"), horizontal=True, height=210, color=color)
                 st.caption("Cada barra es peso × indicador normalizado; la suma es la puntuación.")
                 if len(tj.destinos):
                     st.markdown("**Dónde buscar**")
@@ -287,13 +455,12 @@ def vista_ciudadania():
                     otras = [a.ocupacion for a in res["alternativas_cortas"] if a.ocupacion_id != tj.ocupacion_id]
                     st.caption("Otros saltos cortos valorados: " + ", ".join(otras))
 
-    st.markdown("")
     st.markdown(
-        f'<span class="alc-note">No existen datos abiertos de ofertas de empleo: la demanda se aproxima con los '
+        f'<div class="alc-pie">No existen datos abiertos de ofertas de empleo: la demanda se aproxima con los '
         f'puestos existentes (afiliación por centro de trabajo, 31-12-{int(D["bal"]["anio_puestos"].iloc[0])}), '
-        f'su tendencia y el paro registrado (31-03-{int(D["par"]["anio"].iloc[0])}). <span class="alc-est">estimado</span> el reparto del paro '
-        f'de «Servicios» entre ramas de servicios. Tiempos: {D["metodo_tp"]}. Detalle en «Datos y método».</span>',
-        unsafe_allow_html=True)
+        f'su tendencia y el paro registrado (31-03-{int(D["par"]["anio"].iloc[0])}). <span class="alc-est">estimado</span> '
+        f'el reparto del paro de «Servicios» entre ramas de servicios. Tiempos: {D["metodo_tp"]}. Detalle en '
+        f'«Datos y método».</div>', unsafe_allow_html=True)
 
 
 # =============================================================================== PLANIFICACIÓN
@@ -304,15 +471,16 @@ def accesibilidad(Mtp, Muser, P, U):
 
 
 def vista_planificacion():
-    st.markdown('<div class="alc-hero">Desiertos de empleo accesible</div>', unsafe_allow_html=True)
-    st.markdown('<div class="alc-sub">Dónde vive la gente parada que tiene poco empleo a su alcance en transporte '
-                'público. Para orientadores y para la Consejería.</div>', unsafe_allow_html=True)
-    c = st.columns([2, 1, 1])
-    sectores = list(D["sec"]["sector"])
-    sec = c[0].selectbox("Sector", sectores[::-1] if sectores[-1] == "TOT" else sectores,
-                         format_func=lambda s: D["nom_sec"][s])
-    T = c[1].select_slider("Tiempo máximo", UMBRALES_T, value=45, format_func=lambda v: f"{v} min")
-    capa = c[2].radio("Mapa", ["Accesibilidad", "Balance empleo/residentes"], horizontal=False)
+    hero("Para orientadores y la Consejería", "Desiertos de empleo accesible",
+         "Dónde vive la gente parada que tiene poco empleo a su alcance en transporte público, y cuánto cambiaría "
+         "con una mejor conexión.")
+    with st.container(key="panel_filtros"):
+        c = st.columns([2, 1.4, 1.4], vertical_alignment="center")
+        sectores = list(D["sec"]["sector"])
+        sec = c[0].selectbox("Sector", sectores[::-1] if sectores[-1] == "TOT" else sectores,
+                             format_func=lambda s: D["nom_sec"][s])
+        T = c[1].select_slider("Tiempo máximo", UMBRALES_T, value=45, format_func=lambda v: f"{v} min")
+        capa = c[2].radio("Mapa", ["Accesibilidad", "Balance empleo/residentes"], horizontal=True)
 
     ind = D["ind"][(D["ind"]["sector"] == sec) & (D["ind"]["T"] == T) & (D["ind"]["modo"] == "tp")].set_index("ine")
     par = (D["par"].groupby("ine")["parados"].sum() if sec == "TOT"
@@ -331,10 +499,10 @@ def vista_planificacion():
     for ine in df.index:
         r = df.loc[ine]
         if capa == "Accesibilidad":
-            fill = rampa(np.log(max(r["indice_relativo"], 0.01)), np.log(0.05), np.log(3)) + [210]
+            fill = rampa(np.log(max(r["indice_relativo"], 0.01)), np.log(0.05), np.log(3)) + [215]
         else:
             b = bal.loc[ine, "balance"] if ine in bal.index else 0
-            fill = ([180, 83, 9, 200] if b <= 0.6 else [15, 118, 110, 200] if b >= 1.1 else [209, 213, 219, 200])
+            fill = ([217, 119, 6, 190] if b <= 0.6 else [15, 118, 110, 200] if b >= 1.1 else [214, 218, 208, 200])
         hueco = ine in D["hueco"]
         props[ine] = {"fill": fill,
                       "line": [220, 38, 38] if r["desierto"] else [124, 58, 237] if hueco else [255, 255, 255],
@@ -345,70 +513,92 @@ def vista_planificacion():
                              + ("<br><b style='color:#fca5a5'>Desierto de empleo accesible</b>" if r["desierto"] else "")
                              + ("<br><i>Tiempos estimados: horarios de autobús incompletos en la fuente</i>"
                                 if hueco else "")}
+    des = df[df["desierto"]].sort_values("parados", ascending=False)
+    st.markdown("")
+    stats(
+        stat("Parados en desiertos de empleo accesible", fmt(des["parados"].sum()),
+             f"{fmt(des['parados'].sum() / max(df['parados'].sum(), 1) * 100, 1)} % de los parados del sector",
+             main=True, ayuda="Parados del sector que viven en municipios del tercio con menor accesibilidad y del "
+                              "tercio con más paro por habitante."),
+        stat("Municipios desierto", fmt(len(des)), f"de {len(df)} municipios"),
+        stat("Sin clasificar", fmt(len(D["hueco"])), "horarios de autobús incompletos en la fuente"),
+        stat("Media regional", fmt(D["dest"].query("sector == @sec and T == @T and modo == 'tp'")["puestos"].sum()
+                                   / max(df["parados"].sum(), 1), 1), "puestos por parado del sector"),
+    )
     izq, der = st.columns([2.2, 1], gap="large")
     with izq:
         mapa(props, alto=560)
-        st.markdown('<span class="alc-note">' + (
-            "Más oscuro = más puestos por demandante en transporte público · borde rojo = desierto (tercio con "
-            "menos acceso y tercio con más paro por habitante)" if capa == "Accesibilidad" else
-            "Verde = polo de empleo (más puestos que residentes ocupados) · ocre = ciudad dormitorio (≤0,6) · "
-            "borde rojo = desierto") + " · borde morado = tiempos estimados (horarios de autobús incompletos en "
-            "el GTFS del Consorcio)</span>", unsafe_allow_html=True)
+        leyenda(([("rampa", "", "más oscuro = más puestos por demandante")] if capa == "Accesibilidad" else
+                 [("relleno", "#0f766e", "polo de empleo (≥ 1,1)"), ("relleno", "#d97706", "ciudad dormitorio (≤ 0,6)"),
+                  ("relleno", "#d6dad0", "equilibrado")])
+                + [("borde", "#dc2626", "desierto: tercio con menos acceso y tercio con más paro por habitante"),
+                   ("borde", "#7c3aed", "sin clasificar: horarios de autobús incompletos")])
     with der:
-        des = df[df["desierto"]].sort_values("parados", ascending=False)
-        st.metric("Parados en desiertos de empleo accesible", fmt(des["parados"].sum()),
-                  help="Parados del sector que viven en municipios del tercio con menor accesibilidad y del tercio "
-                       "con más paro por habitante.")
-        st.caption(f"{len(D['hueco'])} municipios con horarios de autobús incompletos en la fuente no se "
-                   f"clasifican (borde morado).")
+        st.markdown('<div class="alc-paso"><div class="t">Dónde actuar primero</div></div>', unsafe_allow_html=True)
         st.dataframe(des.assign(municipio=[NOM[i] for i in des.index], parados=des["parados"].round(0).astype(int))[
                          ["municipio", "parados", "indice_relativo"]].rename(columns={
-                         "municipio": "Municipio", "parados": "Parados", "indice_relativo": "Acceso (×media)"}).round(2),
-                     hide_index=True, height=300)
+                         "municipio": "Municipio", "parados": "Parados", "indice_relativo": "Acceso"}),
+                     hide_index=True, height=500, column_config={
+                         "Municipio": st.column_config.TextColumn(width="medium"),
+                         "Acceso": st.column_config.ProgressColumn(format="×%.2f", min_value=0, max_value=1,
+                                                                   help="Puestos por demandante frente a la media regional"),
+                         "Parados": st.column_config.NumberColumn(format="%d")})
 
-    st.markdown("### Simulador «¿y si…?»: mejorar el transporte")
-    st.caption("Reduce el tiempo de viaje en transporte público entre un municipio y los demás (p. ej., más "
-               "frecuencia o una línea directa) y mira cuánta gente parada gana acceso. Se recalcula el 2SFCA completo.")
-    s1, s2, s3 = st.columns([2, 1, 1])
-    ine_sim = s1.selectbox("Municipio que mejora su conexión", INES, index=INES.index("28106"),
-                           format_func=lambda k: NOM[k])
-    ahorro = s2.slider("Minutos que se ahorran", 0, 30, 10, step=5)
-    destino_sim = s3.selectbox("Hacia", ["Todos los municipios", "Madrid"])
+    st.markdown("")
+    with st.container(key="panel_simulador"):
+        paso("?", "Simulador «¿y si…?»: mejorar el transporte",
+             "más frecuencia o una línea directa; se recalcula el 2SFCA completo")
+        s1, s2, s3 = st.columns([2, 1, 1])
+        ine_sim = s1.selectbox("Municipio que mejora su conexión", INES, index=INES.index("28106"),
+                               format_func=lambda k: NOM[k])
+        ahorro = s2.slider("Minutos que se ahorran", 0, 30, 10, step=5)
+        destino_sim = s3.selectbox("Hacia", ["Todos los municipios", "Madrid"])
 
-    ids = list(D["mun"]["ine"])
-    tt = D["tt"].pivot(index="origen", columns="destino", values="min_tp").reindex(index=ids, columns=ids).to_numpy()
-    tt2 = tt.copy()
-    k = ids.index(ine_sim)
-    cols_ = [ids.index("28079")] if destino_sim == "Madrid" else list(range(len(ids)))
-    for j in cols_:
-        if j != k:
-            tt2[k, j] = max(tt[k, j] - ahorro, 5)
-            tt2[j, k] = max(tt[j, k] - ahorro, 5)
-    if sec == "TOT":
-        P = D["dest"][(D["dest"]["sector"] == "TOT") & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
-        U = D["par"].groupby("ine")["parados"].sum().reindex(ids).fillna(0).to_numpy()
-    else:
-        P = D["dest"][(D["dest"]["sector"] == sec) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
-        U = D["par"][D["par"]["sector"] == sec].set_index("ine")["parados"].reindex(ids).fillna(0).to_numpy()
-    A0 = accesibilidad(tt <= T, tt <= T, P, U)
-    A1 = accesibilidad(tt2 <= T, tt2 <= T, P, U)
-    umbral = P.sum() / U.sum()
-    gana = (A0 < umbral) & (A1 >= umbral)
-    r1, r2, r3 = st.columns(3)
-    r1.metric(f"Accesibilidad en {NOM[ine_sim]}", fmt(A1[k], 1), delta=f"{fmt((A1[k] / max(A0[k], 1e-9) - 1) * 100, 0)} %")
-    r2.metric("Parados que pasan a superar la media regional", fmt(U[gana].sum()),
-              help=f"Media regional: {fmt(umbral, 1)} puestos por parado en el sector.")
-    r3.metric("Municipios que mejoran", int((A1 > A0 * 1.01).sum()))
+        ids = list(D["mun"]["ine"])
+        tt = D["tt"].pivot(index="origen", columns="destino", values="min_tp").reindex(index=ids, columns=ids).to_numpy()
+        tt2 = tt.copy()
+        k = ids.index(ine_sim)
+        cols_ = [ids.index("28079")] if destino_sim == "Madrid" else list(range(len(ids)))
+        for j in cols_:
+            if j != k:
+                tt2[k, j] = max(tt[k, j] - ahorro, 5)
+                tt2[j, k] = max(tt[j, k] - ahorro, 5)
+        if sec == "TOT":
+            P = D["dest"][(D["dest"]["sector"] == "TOT") & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
+            U = D["par"].groupby("ine")["parados"].sum().reindex(ids).fillna(0).to_numpy()
+        else:
+            P = D["dest"][(D["dest"]["sector"] == sec) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == "tp")].set_index("ine")["puestos"].reindex(ids).fillna(0).to_numpy()
+            U = D["par"][D["par"]["sector"] == sec].set_index("ine")["parados"].reindex(ids).fillna(0).to_numpy()
+        A0 = accesibilidad(tt <= T, tt <= T, P, U)
+        A1 = accesibilidad(tt2 <= T, tt2 <= T, P, U)
+        umbral = P.sum() / U.sum()
+        gana = (A0 < umbral) & (A1 >= umbral)
+        cambio = (A1[k] / max(A0[k], 1e-9) - 1) * 100
+        stats(
+            stat(f"Accesibilidad en {e(NOM[ine_sim])}", fmt(A1[k], 1), f"antes {fmt(A0[k], 1)} puestos por demandante",
+                 pill=("up", f"+{fmt(cambio)} %") if cambio > 0.5 else ("flat", "sin cambio"), main=True),
+            stat("Parados que pasan a superar la media regional", fmt(U[gana].sum()),
+                 f"media regional: {fmt(umbral, 1)} puestos por parado"),
+            stat("Municipios que mejoran", fmt(int((A1 > A0 * 1.01).sum())), "más de un 1 %"),
+            columnas="1.4fr 1fr 1fr")
 
 
 # =============================================================================== DATOS
 def vista_datos():
-    st.markdown('<div class="alc-hero">Datos y método</div>', unsafe_allow_html=True)
-    st.markdown("""
-**Pregunta:** ¿cuánto empleo de mi sector puedo alcanzar en transporte público, y con cuánta gente compito por él?
-
-**Indicador principal — puestos por demandante (2SFCA, Shen 1998).** Para cada municipio de destino *j*:
-`R_j = puestos_j / Σ_k parados_k · [t_kj ≤ T]`; para cada municipio de origen *i*: `A_i = Σ_j R_j · [t_ij ≤ T]`.
+    hero("Transparencia", "Datos y método",
+         "Cada cifra de Alcanza se puede rastrear hasta su fuente abierta y su fecha. Aquí está cómo se calcula "
+         "y qué límites tiene.")
+    tab_m, tab_f, tab_d = st.tabs([":material/function: Método", ":material/source: Fuentes",
+                                   ":material/download: Datasets elaborados"])
+    with tab_m:
+        st.markdown("**Pregunta:** ¿cuánto empleo de mi sector puedo alcanzar en transporte público, y con cuánta "
+                    "gente compito por él?")
+        st.markdown("**Indicador principal — puestos por demandante (2SFCA, Shen 1998).**")
+        st.markdown('<div class="alc-formula"><b>1.</b> para cada destino j: &nbsp;R<sub>j</sub> = puestos<sub>j</sub> '
+                    '/ Σ<sub>k</sub> parados<sub>k</sub> · [t<sub>kj</sub> ≤ T]<br><b>2.</b> para cada origen i: '
+                    '&nbsp;A<sub>i</sub> = Σ<sub>j</sub> R<sub>j</sub> · [t<sub>ij</sub> ≤ T]</div>',
+                    unsafe_allow_html=True)
+        st.markdown("""
 Cada modo tiene su propio cálculo: en transporte público se compite con parados que se mueven en transporte
 público; con coche, con parados que también tienen coche. *Índice relativo* = `A_i` dividido entre la ratio regional
 (puestos del sector / parados del sector); su media ponderada por parados es exactamente 1 (comprobado).
@@ -444,12 +634,18 @@ Servicios se reparte entre tres ramas con la estructura de afiliados residentes 
 de 5; el salario es regional por gran grupo de ocupación (Encuesta de Estructura Salarial, cuatrienal); la tabla de
 ocupaciones y sus saltos es una correspondencia hecha a mano.
 """.replace("{metodo}", D["metodo_tp"]))
-    st.markdown("#### Fuentes descargadas")
-    f = pd.DataFrame(D["fuentes"])[["titulo", "descargado", "modificado_catalogo", "url"]]
-    st.dataframe(f, hide_index=True, column_config={"url": st.column_config.LinkColumn("Enlace")})
-    st.markdown("#### Datasets elaborados (descargables)")
-    for p in sorted(PROCESSED.glob("*.csv")):
-        st.download_button(f"⬇ {p.name}", p.read_bytes(), file_name=p.name, mime="text/csv", key=p.name)
+    with tab_f:
+        f = pd.DataFrame(D["fuentes"])[["titulo", "descargado", "modificado_catalogo", "url"]]
+        st.dataframe(f, hide_index=True, use_container_width=True, column_config={
+            "titulo": "Conjunto de datos", "descargado": "Descargado", "modificado_catalogo": "Modificado en catálogo",
+            "url": st.column_config.LinkColumn("Enlace")})
+    with tab_d:
+        st.caption("CSV en UTF-8 con separador «,». Diccionario de datos completo en `data/processed/README.md`.")
+        ficheros = sorted(PROCESSED.glob("*.csv"))
+        cols = st.columns(3)
+        for n, p in enumerate(ficheros):
+            cols[n % 3].download_button(f"{p.name}", p.read_bytes(), file_name=p.name, mime="text/csv", key=p.name,
+                                        icon=":material/download:", use_container_width=True)
 
 
 {"Busco empleo": vista_ciudadania, "Orientación y planificación": vista_planificacion,
