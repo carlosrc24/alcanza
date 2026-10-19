@@ -137,6 +137,9 @@ iframe, [data-testid="stDeckGlJsonChart"] {border-radius: 16px; overflow: hidden
 .alc-ring small {display: block; font-size: .55rem; color: var(--muted); font-weight: 500;}
 .alc-card.bloqueada {opacity: .5; filter: grayscale(.6);}
 .alc-card.mejor {border: 2px solid var(--c);}
+.alc-entendido {display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px 0;}
+.alc-entendido span {background: var(--teal-l); color: var(--teal); border-radius: 999px; padding: 3px 12px;
+  font-size: .85rem; font-weight: 600;}
 .alc-card .ofertas {display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px;
   padding-top: 10px; border-top: 1px solid var(--line); font-size: .78rem; color: var(--muted);}
 .alc-card .ofertas a {border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 2px 10px;
@@ -259,7 +262,8 @@ def enlaces_ofertas(ocupacion: str, municipio: str) -> str:
     q = re.sub(r"/[a-záéíóú]+\b", "", re.split(r" (?:o|u) | \(", ocupacion)[0]).strip()
     lugar = R.nombre_municipio(municipio)
     urls = {"LinkedIn": "https://www.linkedin.com/jobs/search/?" + urlencode(
-                {"keywords": q, "location": f"{lugar}, Comunidad de Madrid, España"}),
+                {"keywords": q, "location": f"{lugar}, Comunidad de Madrid, España",
+                 "f_E": "3,4"}),  # nivel de experiencia: «Algo de responsabilidad» e «Intermedio»
             "InfoJobs": "https://www.infojobs.net/jobsearch/search-results/list.xhtml?" + urlencode(
                 {"keyword": q, "provinceIds": 33}),  # 33 = provincia de Madrid
             "Indeed": "https://es.indeed.com/jobs?" + urlencode({"q": q, "l": lugar})}
@@ -308,57 +312,82 @@ def vista_ciudadania():
          "Te decimos cuánto trabajo de lo tuyo puedes alcanzar de verdad en transporte público, con cuánta gente "
          "compites por él y qué caminos parecidos te abren más puertas. No guardamos nada.")
 
+    # Valores de partida: los del texto de ejemplo (Chamberí), para que la página cuadre con él
     ss = st.session_state
     ss.setdefault("ocupacion", "aux_admin")
-    ss.setdefault("ine", "28106")
+    ss.setdefault("ine", "28079")
     ss.setdefault("coche", False)
     ss.setdefault("hijo", True)
-    ss.setdefault("formacion", True)
-    ss.setdefault("T", 45)
+    ss.setdefault("formacion", False)
+    ss.setdefault("T", 15)
+    ss.setdefault("cp", "28010")
 
     with st.container(key="panel_situacion"):
-        paso(1, "Tu situación", "cuéntalo con tus palabras o rellena los campos")
+        paso(1, "Tu situación", "cuéntalo con tus palabras")
         hay_ia = IA_DISPONIBLE
-        with st.expander("Escríbelo con tus palabras", icon=":material/edit_note:", expanded=False):
-            txt = st.text_area("Tu situación", label_visibility="collapsed", height=100,
-                               value="He trabajado 6 años de auxiliar administrativa. Vivo en Parla, no tengo coche y "
-                                     "tengo un niño de 2 años. Si merece la pena, volvería a estudiar.")
-            b1, b2 = st.columns([1, 2.2], vertical_alignment="center")
-            usar_ia = b2.toggle("Entender con IA (Google Gemini)", value=hay_ia, disabled=not hay_ia, key="usar_ia",
-                                help="La IA solo rellena los campos de abajo para que los revises. No puntúa ni "
-                                     "recomienda: eso lo hacen los datos abiertos. Sin IA se usan reglas fijas.")
-            if b1.button("Entender mi situación", icon=":material/auto_awesome:", type="primary"):
-                r = entender(txt, usar_ia)
-                for k in ("ocupacion", "ine", "coche", "hijo", "formacion"):
-                    if r.campos[k] is not None:
-                        ss[k] = r.campos[k]
-                if r.campos["T"]:
-                    ss["T"] = R.snap_T(r.campos["T"])
-                ss["interpretacion"] = r
-            r = ss.get("interpretacion")
-            if r is not None:
-                campos = {"ocupacion": "ocupación", "ine": "dónde vives", "coche": "coche", "hijo": "hijos",
-                          "formacion": "formación", "T": "tiempo de viaje"}
-                faltan = [v for k, v in campos.items() if r.campos[k] is None]
-                origen = (f"Entendido con IA ({r.modelo}, {fmt(r.segundos, 1)} s)" if r.metodo == "ia"
-                          else "Entendido con reglas fijas" + (f": {r.aviso}" if r.aviso else ""))
-                txt_ok = f"**{origen}.** Revisa los campos de abajo y corrige lo que haga falta."
-                if r.ocupacion_aproximada:
-                    txt_ok += (f" No tenemos «{e(r.ocupacion_dicha)}» en la lista: hemos elegido la más parecida, "
-                               f"«{OCU.loc[r.campos['ocupacion'], 'ocupacion']}».")
-                if faltan:
-                    txt_ok += f" No lo has mencionado o no lo hemos reconocido: {', '.join(faltan)}."
-                st.success(txt_ok)
-            st.caption("Con IA, el texto se envía a Google Gemini solo para rellenar los campos y no se guarda. "
-                       if hay_ia else "La IA no está configurada: se usan reglas fijas. ")
+        txt = st.text_area("Tu situación", label_visibility="collapsed", height=100,
+                           value="He trabajado 3 años de auxiliar administrativa. Vivo en Chamberí, no tengo coche y "
+                                 "tengo un niño de 2 años. No volvería a estudiar y lo máximo que "
+                                 "estaría dispuesto a viajar es 15 min.")
+        # Solo con IA: el interruptor queda comentado (si la IA falla, se usan las reglas fijas igualmente)
+        usar_ia = hay_ia
+        # b1, b2 = st.columns([1, 2.2], vertical_alignment="center")
+        # usar_ia = b2.toggle("Entender con IA (Google Gemini)", value=hay_ia, disabled=not hay_ia, key="usar_ia",
+        #                     help="La IA solo rellena los campos de abajo para que los revises. No puntúa ni "
+        #                          "recomienda: eso lo hacen los datos abiertos. Sin IA se usan reglas fijas.")
+        if st.button("Entender mi situación", icon=":material/auto_awesome:", type="primary"):
+            r = entender(txt, usar_ia)
+            for k in ("ocupacion", "ine", "coche", "hijo", "formacion"):
+                if r.campos[k] is not None:
+                    ss[k] = r.campos[k]
+            if r.campos["ine"] is not None:  # barrio de Madrid con ejemplo por código postal
+                ss["cp"] = r.campos["cp"] if r.campos["ine"] == "28079" else None
+            if r.campos["T"]:
+                ss["T"] = R.snap_T(r.campos["T"])
+            ss["interpretacion"] = r
+        r = ss.get("interpretacion")
+        if r is not None:
+            campos = {"ocupacion": "ocupación", "ine": "dónde vives", "coche": "coche", "hijo": "hijos",
+                      "formacion": "formación", "T": "tiempo de viaje"}
+            faltan = [v for k, v in campos.items() if r.campos[k] is None]
+            origen = (f"Entendido con IA ({r.modelo}, {fmt(r.segundos, 1)} s)" if r.metodo == "ia"
+                      else "Entendido con reglas fijas" + (f": {r.aviso}" if r.aviso else ""))
+            txt_ok = f"**{origen}.**"
+            if r.ocupacion_aproximada:
+                txt_ok += (f" No tenemos «{e(r.ocupacion_dicha)}» en la lista: hemos elegido la más parecida, "
+                           f"«{OCU.loc[r.campos['ocupacion'], 'ocupacion']}».")
+            if faltan:
+                txt_ok += f" No lo has mencionado o no lo hemos reconocido: {', '.join(faltan)}."
+            st.success(txt_ok)
+        # lo que se está usando, ya que los campos para corregirlo a mano no se muestran
+        cp_txt = (f" · {D['cp'].loc['CP' + ss.cp, 'barrio']} ({ss.cp})"
+                  if ss.ine == "28079" and ss.cp and R.es_cp(D, "CP" + ss.cp) else "")
+        resumen = [OCU.loc[ss.ocupacion, "ocupacion"], f"{R.nombre_municipio(NOM[ss.ine])}{cp_txt}",
+                   "con coche" if ss.coche else "sin coche", "hijo/a de 0 a 3 años" if ss.hijo else "sin hijos pequeños",
+                   "dispuesta/o a formarse" if ss.formacion else "sin formarse", f"hasta {ss.T} min"]
+        st.markdown('<div class="alc-entendido">' + "".join(f"<span>{e(x)}</span>" for x in resumen) + "</div>",
+                    unsafe_allow_html=True)
+        st.caption("El texto se envía a Google Gemini solo para entender tu situación y no se guarda. La IA no "
+                   "puntúa ni recomienda: eso lo hacen los datos abiertos."
+                   if hay_ia else "La IA no está configurada: se usan reglas fijas.")
 
-        c = st.columns(2)
-        c[0].selectbox("Ocupación", list(OCU.index), key="ocupacion", format_func=lambda o: OCU.loc[o, "ocupacion"])
-        c[1].selectbox("Vivo en", INES, key="ine", format_func=lambda k: NOM[k])
-        c = st.columns(3)
-        c[0].toggle("Tengo coche", key="coche")
-        c[1].toggle("Hijo/a de 0 a 3 años", key="hijo")
-        c[2].toggle("Dispuesta/o a formarme", key="formacion")
+        # Campos para rellenar o corregir a mano: comentados para la demo (solo texto + IA). No borrar.
+        # hay_cp = ss.ine == "28079" and len(D["cp"]) > 0
+        # c = st.columns([1, 1, 0.8] if hay_cp else 2)
+        # c[0].selectbox("Ocupación", list(OCU.index), key="ocupacion", format_func=lambda o: OCU.loc[o, "ocupacion"])
+        # c[1].selectbox("Vivo en", INES, key="ine", format_func=lambda k: NOM[k])
+        # if hay_cp:
+        #     CPS = dict(zip(D["cp"]["cp"], D["cp"]["barrio"]))
+        #     if ss.cp not in CPS:
+        #         ss.cp = None
+        #     c[2].selectbox("Código postal (ejemplos)", [None] + list(CPS), key="cp",
+        #                    format_func=lambda k: "Sin concretar" if k is None else f"{k} · {CPS[k]}",
+        #                    help="Ejemplos de Madrid capital: el viaje sale de una estación de Metro de tu barrio en "
+        #                         "lugar del centro de Madrid.")
+        # c = st.columns(3)
+        # c[0].toggle("Tengo coche", key="coche")
+        # c[1].toggle("Hijo/a de 0 a 3 años", key="hijo")
+        # c[2].toggle("Dispuesta/o a formarme", key="formacion")
 
     st.markdown("")
     izq, der = st.columns([1.15, 2.6], gap="medium")
@@ -381,7 +410,9 @@ def vista_ciudadania():
                        "dónde está el empleo de tu ocupación: depende del tiempo, el municipio y el coche.")
 
     res = R.recomendar(D, ss.ocupacion, ss.ine, coche=ss.coche, hijo=ss.hijo, formacion=ss.formacion,
-                       T=T, pesos=pesos)
+                       T=T, pesos=pesos, cp=ss.cp if ss.ine == "28079" else None)
+    origen = res["origen"]
+    desde = R.nombre_origen(D, origen) + (", Madrid" if R.es_cp(D, origen) else "")
     tarjetas = res["tarjetas"]
     directo = tarjetas[0]
     ind = directo.indicadores
@@ -396,7 +427,7 @@ def vista_ciudadania():
         v = ind["var_interanual"]
         stats(
             stat("Puestos de tu sector a tu alcance", fmt(ind["puestos_alcanzables"]),
-                 f"{e(sector_txt.capitalize())}<br>desde {e(NOM[ss.ine])} · ≤ {T} min {modo_txt}", main=True),
+                 f"{e(sector_txt.capitalize())}<br>desde {e(desde)} · ≤ {T} min {modo_txt}", main=True),
             stat("Puestos por demandante", fmt(ind["puestos_por_competidor"], 1), "método 2SFCA",
                  ayuda="Puestos de cada destino repartidos entre los parados del sector que pueden llegar a él, "
                        "sumados sobre los destinos que tú alcanzas."),
@@ -413,9 +444,8 @@ def vista_ciudadania():
                         f'infravalorados.</div></div>', unsafe_allow_html=True)
 
         # mapa: destinos alcanzables coloreados por puestos por demandante del destino
-        t = R.tiempos_desde(D, ss.ine, res["modo"])
-        dd = D["dest"][(D["dest"]["sector"] == directo.sector) & (D["dest"]["T"] == res["T"])
-                       & (D["dest"]["modo"] == res["modo"])].set_index("ine")
+        t = R.tiempos_desde(D, origen, res["modo"])
+        dd = R.destinos(D, origen, directo.sector, res["T"], res["modo"])
         alc = t[t <= T].index
         vals = dd.loc[dd.index.intersection(alc), "puestos_por_competidor_destino"]
         lo, hi = (vals.quantile(.1), vals.quantile(.9)) if len(vals) else (0, 1)
@@ -435,7 +465,13 @@ def vista_ciudadania():
                                  + ("" if ok else "<br><i>fuera de tu tiempo máximo</i>")}
         pts = []
         if ss.hijo:
-            ei = D["rec"][(D["rec"]["tipo"] == "escuela_infantil") & D["rec"]["ine"].isin(set(top) | {ss.ine})].copy()
+            ei = D["rec"][D["rec"]["tipo"] == "escuela_infantil"].copy()
+            if R.es_cp(D, origen):  # las de cerca de casa y las de los destinos fuera de Madrid
+                o = D["cp"].loc[origen]
+                cerca = R._km(o["lat"], o["lon"], ei["lat"].astype(float), ei["lon"].astype(float)) <= R.RADIO_EI_CP_KM
+                ei = ei[cerca | (ei["ine"].isin(top) & (ei["ine"] != ss.ine))]
+            else:
+                ei = ei[ei["ine"].isin(set(top) | {ss.ine})]
             ei["color"] = [[219, 39, 119, 220]] * len(ei)
             ei["tip"] = "👶 " + ei["nombre"] + "<br>" + ei["subtipo"] + " · " + ei["titularidad"]
             pts.append(ei)
@@ -445,12 +481,17 @@ def vista_ciudadania():
                 fp["color"] = [[109, 40, 217, 235]] * len(fp)
                 fp["tip"] = "🎓 " + fp["nombre"] + "<br>" + fp["subtipo"]
                 pts.append(fp)
+        if R.es_cp(D, origen):  # tu casa: la estación de Metro de referencia del barrio
+            o = D["cp"].loc[origen]
+            pts.append(pd.DataFrame({"lon": [float(o["lon"])], "lat": [float(o["lat"])], "color": [[20, 33, 61, 255]],
+                                     "tip": [f"🏠 {e(o['barrio'])} ({o['cp']})<br>salida: Metro {e(o['estacion'])}"]}))
         puntos = pd.concat(pts)[["lon", "lat", "color", "tip"]] if pts else None
-        o = D["mun"].set_index("ine").loc[ss.ine]
+        o = D["cp"].loc[origen] if R.es_cp(D, origen) else D["mun"].set_index("ine").loc[ss.ine]
         mapa(props, puntos, centro=(o["lat"], o["lon"]), zoom=9.3 if T <= 45 else 8.6, alto=440)
         leyenda([("rampa", "", "puestos por demandante en el destino"),
                  ("relleno", "#e2e4dd", "fuera de tu tiempo"),
                  ("borde", "#14213d", "donde vives"),
+                 *([("punto", "#14213d", "tu barrio (Metro de referencia)")] if R.es_cp(D, origen) else []),
                  ("borde", "#d97706", "destinos recomendados")]
                 + ([("punto", "#db2777", "escuelas infantiles")] if ss.hijo else [])
                 + ([("punto", "#6d28d9", "centros de formación")] if ss.formacion else []))

@@ -47,7 +47,60 @@ def cargar(carpeta=PROCESSED) -> dict:
     ind["z_volumen"] = g["puestos_alcanzables"].rank(pct=True)
     D["indz"] = ind.set_index(["ine", "sector", "T", "modo"])
     D["ei_mun"] = D["rec"][D["rec"]["tipo"] == "escuela_infantil"].groupby("ine").size()
+    _cargar_cp(D, carpeta, ind)
     return D
+
+
+RADIO_EI_CP_KM = 2.0  # escuelas infantiles «cerca de casa» en los ejemplos por código postal
+
+
+def _cargar_cp(D, carpeta, ind):
+    """Ejemplos de origen por código postal en Madrid capital (src/cp.py), en tablas aparte: no se
+    mezclan con las municipales (desiertos, simulador y conservación del 2SFCA no cambian)."""
+    D["cp"] = pd.DataFrame()
+    if not all((carpeta / f).exists() for f in ("cp_ejemplos.csv", "tiempos_cp.csv", "indicadores_cp_sector.csv")):
+        return
+    s = {"cp": str, "ine": str, "origen": str, "destino": str}
+    D["cp"] = pd.read_csv(carpeta / "cp_ejemplos.csv", dtype=s).set_index("ine")
+    D["tt_cp"] = pd.read_csv(carpeta / "tiempos_cp.csv", dtype=s)
+    icp = pd.read_csv(carpeta / "indicadores_cp_sector.csv", dtype=s)
+    icp = icp[icp["sector"] != "TOT"].copy()
+    # mismo rango percentil que los municipios, frente a la distribución municipal (sin re-ordenarla)
+    for col, z in (("puestos_por_competidor", "z_competencia"), ("puestos_alcanzables", "z_volumen")):
+        ref = {k: np.sort(g[col].to_numpy()) for k, g in ind.groupby(["T", "modo"])}
+        icp[z] = [np.searchsorted(ref[(T, m)], v, side="right") / len(ref[(T, m)])
+                  for T, m, v in zip(icp["T"], icp["modo"], icp[col])]
+    D["indz_cp"] = icp.set_index(["origen", "sector", "T", "modo"])
+    ei = D["rec"][D["rec"]["tipo"] == "escuela_infantil"]
+    D["ei_cp"] = {o: int((_km(r["lat"], r["lon"], ei["lat"].astype(float), ei["lon"].astype(float))
+                          <= RADIO_EI_CP_KM).sum()) for o, r in D["cp"].iterrows()}
+
+
+def _km(lat, lon, lats, lons):
+    dy = (lats - lat) * 111.2
+    dx = (lons - lon) * 111.2 * np.cos(np.radians(lat))
+    return np.sqrt(dx ** 2 + dy ** 2)
+
+
+def es_cp(D, o) -> bool:
+    return len(D["cp"]) > 0 and o in D["cp"].index
+
+
+def origen_de(D, ine, cp=None) -> str:
+    """Origen del cálculo: el ejemplo de código postal si existe y vives en Madrid; si no, el municipio."""
+    o = f"CP{cp}" if cp else None
+    return o if (o and ine == "28079" and es_cp(D, o)) else ine
+
+
+def nombre_origen(D, o) -> str:
+    if es_cp(D, o):
+        r = D["cp"].loc[o]
+        return f"{r['barrio']} ({r['cp']})"
+    return nombre_municipio(D["nom"][o])
+
+
+def ei_origen(D, o) -> int:
+    return D["ei_cp"][o] if es_cp(D, o) else int(D["ei_mun"].get(o, 0))
 
 
 def nombre_municipio(nombre: str) -> str:
@@ -81,13 +134,29 @@ class Tarjeta:
 
 def tiempos_desde(D, ine: str, modo: str) -> pd.Series:
     col = "min_tp" if modo == "tp" else "min_coche"
-    t = D["tt"][D["tt"]["origen"] == ine].set_index("destino")[col]
+    tt = D["tt_cp"] if es_cp(D, ine) else D["tt"]
+    t = tt[tt["origen"] == ine].set_index("destino")[col]
     return t
+
+
+def destinos(D, o, sector, T, modo) -> pd.DataFrame:
+    """Oportunidad en cada destino (oportunidad_destino.csv). Con un barrio de ejemplo como origen, en los
+    destinos a los que llega el barrio y no el núcleo de Madrid compiten también los parados de Madrid
+    (la misma corrección que src/cp.py; si no, esos destinos repartirían sus puestos entre muy pocos)."""
+    d = D["dest"][(D["dest"]["sector"] == sector) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == modo)].set_index("ine")
+    if es_cp(D, o):
+        par = D["par"][D["par"]["ine"] == "28079"]
+        u_mad = par["parados"].sum() if sector == "TOT" else par.loc[par["sector"] == sector, "parados"].sum()
+        nuevo = (tiempos_desde(D, o, modo).reindex(d.index) <= T) & (tiempos_desde(D, "28079", modo).reindex(d.index) > T)
+        d = d.copy()
+        d.loc[nuevo, "puestos_por_competidor_destino"] = (
+            d.loc[nuevo, "puestos"] / np.maximum(d.loc[nuevo, "competidores_que_llegan"] + u_mad, 1)).round(3)
+    return d
 
 
 def mejores_destinos(D, ine, sector, T, modo, n=3) -> pd.DataFrame:
     t = tiempos_desde(D, ine, modo)
-    d = D["dest"][(D["dest"]["sector"] == sector) & (D["dest"]["T"] == T) & (D["dest"]["modo"] == modo)].set_index("ine")
+    d = destinos(D, ine, sector, T, modo)
     d = d.join(t.rename("minutos"), how="inner")
     d = d[(d["minutos"] <= T) & (d["puestos"] >= 50)].copy()
     if d.empty:
@@ -132,16 +201,15 @@ def _fmt(x, dec=0):
 
 def puntuar(D, ocu_row, ine, T, modo, hijo, pesos, tipo):
     s = ocu_row["sector"]
-    fila = D["indz"].loc[(ine, s, T, modo)]
+    fila = (D["indz_cp"] if es_cp(D, ine) else D["indz"]).loc[(ine, s, T, modo)]
     dest = mejores_destinos(D, ine, s, T, modo)
-    ei_origen = int(D["ei_mun"].get(ine, 0))
     ei_dest = int(dest["ei"].sum()) if len(dest) else 0
     z = {
         "competencia": float(fila["z_competencia"]),
         "volumen": float(fila["z_volumen"]),
         "tendencia": _z_tendencia(fila["var_interanual"]),
         "salario": _z_salario(D, ocu_row["cno11"]),
-        "conciliacion": float(min(1.0, (ei_origen + ei_dest) / 15)) if hijo else 0.0,
+        "conciliacion": float(min(1.0, (ei_origen(D, ine) + ei_dest) / 15)) if hijo else 0.0,
         "esfuerzo": {"directo": 1.0, "salto_corto": 0.8, "salto_formacion": 0.2}[tipo],
     }
     w = {k: (pesos.get(k, 0) if (k != "conciliacion" or hijo) else 0) for k in z}
@@ -151,7 +219,7 @@ def puntuar(D, ocu_row, ine, T, modo, hijo, pesos, tipo):
 
 
 def explicar(D, tipo, ocu_row, ine, T, modo, fila, dest, hijo):
-    origen = nombre_municipio(D["nom"][ine])
+    origen = nombre_origen(D, ine)
     sec = D["nom_sec"][ocu_row["sector"]].split(" (")[0].lower()
     medio = "en transporte público" if modo == "tp" else "en coche"
     ppc = fila["puestos_por_competidor"]
@@ -159,7 +227,8 @@ def explicar(D, tipo, ocu_row, ine, T, modo, fila, dest, hijo):
     comp = "más" if rel >= 1 else "menos"
     partes = [
         f"Desde {origen} llegas {medio} en ≤{T} min a unos {_fmt(fila['puestos_alcanzables'])} puestos de "
-        f"{sec} en {int(fila['municipios_alcanzables'])} municipios. "
+        f"{sec} en {int(fila['municipios_alcanzables'])} "
+        f"{'municipio' if int(fila['municipios_alcanzables']) == 1 else 'municipios'}. "
         f"Por cada parado del sector que también llega hay {_fmt(ppc, 1)} puestos "
         f"({_fmt(abs(rel), 1)} veces la media regional: {comp} oportunidades que la media)."
     ]
@@ -176,7 +245,8 @@ def explicar(D, tipo, ocu_row, ine, T, modo, fila, dest, hijo):
     if tipo == "salto_formacion":
         partes.append(f"Requiere: {ocu_row['formacion_requerida_origen']} ({ocu_row['duracion_origen']}).")
     if hijo and len(dest):
-        partes.append(f"Hay {int(D['ei_mun'].get(ine, 0))} escuelas infantiles en {origen} y "
+        cerca = f"a menos de {_fmt(RADIO_EI_CP_KM)} km de {origen}" if es_cp(D, ine) else f"en {origen}"
+        partes.append(f"Hay {ei_origen(D, ine)} escuelas infantiles {cerca} y "
                       f"{int(dest['ei'].sum())} en los destinos propuestos.")
     return " ".join(partes)
 
@@ -214,8 +284,9 @@ def resumir(D, t, base, yo) -> str:
     return txt
 
 
-def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=45, pesos=None):
+def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=45, pesos=None, cp=None):
     pesos = {**PESOS_DEFECTO, **(pesos or {})}
+    ine = origen_de(D, ine, cp)  # con código postal de ejemplo, los tiempos salen de su barrio
     T = snap_T(T)
     modo = "coche" if coche else "tp"
     ocu = D["ocu"].set_index("id")
@@ -245,7 +316,7 @@ def recomendar(D, ocupacion_id, ine, coche=False, hijo=False, formacion=True, T=
         tarjetas.append(t)
     for t in tarjetas:
         t.resumen = resumir(D, t, base, yo)
-    return {"T": T, "modo": modo, "tarjetas": tarjetas, "alternativas_cortas": cortos,
+    return {"T": T, "modo": modo, "origen": ine, "tarjetas": tarjetas, "alternativas_cortas": cortos,
             "formacion_activa": formacion}
 
 

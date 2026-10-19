@@ -10,55 +10,68 @@ en directo de la app, así que las diapositivas deben ser muy visuales, con poco
 cifra grande).
 
 Para cada diapositiva dame: título, texto en pantalla, sugerencia visual concreta (gráfico, icono, mapa,
-esquema) y notas del ponente (2-4 frases). Estilo: limpio, moderno, colores sobrios (verde azulado oscuro
-#14213d / #0f766e con acento ámbar #d97706), una idea por diapositiva.
+esquema) y notas del ponente (2-4 frases). Estilo: limpio, moderno, colores sobrios (azul noche #14213d y verde
+azulado #0f766e, con acento ámbar #d97706), una idea por diapositiva.
 
 PROYECTO: «Alcanza — el empleo que está a tu alcance». Equipo: Carlos Rodríguez Caparrós, Ana Denis Rubio,
 Jiaxing Zhu, Pedro González Carnero (Máster en Ingeniería Informática, UC3M).
 
-Qué hace: recomienda a una persona en paro de la Comunidad de Madrid qué empleo puede alcanzar de verdad en
-transporte público, cuánta gente compite por él, qué empleo parecido puede hacer o al que puede llegar con
-formación, y qué escuelas infantiles, formación y servicios sociales tiene cerca. La persona lo cuenta con sus
-palabras y ajusta el tiempo máximo de viaje y sus prioridades. Cada recomendación lleva botones que abren las
-ofertas de hoy en LinkedIn, InfoJobs e Indeed para esa ocupación en el municipio recomendado. Segunda vista para orientadores/Consejería: mapa
-de «desiertos de empleo accesible», simulador «¿y si…?» y ranking de mejoras de transporte.
+LA IDEA: una persona en paro no busca empleo en toda la Comunidad de Madrid, sino donde puede llegar en
+transporte público en un tiempo razonable, y allí compite con otros parados que también llegan. Alcanza le dice
+qué empleo tiene de verdad a su alcance, a qué trabajo parecido puede saltar, si le compensa formarse y qué
+escuelas infantiles tiene cerca, y con un clic le abre las ofertas de hoy. A la administración le dice dónde
+vive la gente que se queda sin empleo a su alcance y qué mejora de transporte saca a más personas de esa
+situación.
 
-Caso conductor: Lucía, auxiliar administrativa en Parla, sin coche, hijo de 2 años, dispuesta a formarse.
-Con 60 min en transporte público alcanza ~34.700 puestos de su sector en 7 municipios, pero hay 0,8 puestos
-por cada parado que compite. Con 75 min entra Madrid (62 min desde Parla): ~970.000 puestos en 14 municipios y
-12,4 puestos por competidor. 17 escuelas infantiles en Parla.
+CÓMO SE USA: la persona escribe su situación con sus palabras; la IA (Google Gemini) la entiende (ocupación,
+municipio y hasta el barrio, coche, hijos, formación, tiempo de viaje). Ajusta el tiempo máximo y sus
+prioridades; ve sus cifras, un mapa y tres caminos (su mismo empleo, un salto corto sin formación y un salto con
+formación), ordenados por sus prioridades, con el porqué y botones a LinkedIn, InfoJobs e Indeed. La IA nunca
+puntúa ni recomienda: todas las cifras salen de datos abiertos.
 
-Datos abiertos (protagonistas los de la Comunidad de Madrid): afiliados a la Seguridad Social por lugar de
+CASO CONDUCTOR (dos personas sin coche, dos lugares):
+- Lucía, auxiliar administrativa en Chamberí (Madrid), hijo de 2 años, 15 min de viaje como máximo: ~915.000
+  puestos de su sector y 20 puestos por cada parado que compite (1,4 veces la media); 41 escuelas infantiles a
+  menos de 2 km.
+- Javier, camarero en Parla, 45 min como máximo: ~44.600 puestos de hostelería y comercio en 4 municipios y 4,4
+  puestos por demandante (un 66 % menos que la media). Si acepta 75 min entra Madrid (62 min): ~724.000 puestos y
+  11,2 por demandante, pero con dos horas y media de viaje al día.
+- La administración: si el transporte desde Parla ahorrara 10 minutos, sus 7.041 parados saldrían de un
+  «desierto de empleo accesible»; es la mejora de la región que más gente saca.
+Frase: «Lo que Javier consigue viajando más, la administración se lo puede dar a 7.041 personas.»
+
+DATOS ABIERTOS (protagonistas los de la Comunidad de Madrid): afiliados a la Seguridad Social por lugar de
 trabajo y rama, y por residencia; paro registrado por sector; padrón; salario por ocupación; centros educativos;
-centros de atención social; límites municipales; Encuesta Domiciliaria de Movilidad 2018; GTFS del Consorcio
-de Transportes y de Renfe Cercanías; OpenStreetMap. 179 municipios unidos por código INE; cada cifra con fuente
-y fecha.
+centros de atención social; límites municipales; Encuesta Domiciliaria de Movilidad 2018. Además, GTFS del
+Consorcio de Transportes y de Renfe Cercanías, y OpenStreetMap. 179 municipios unidos por código INE; cada cifra
+con fuente y fecha. No hay datos abiertos de ofertas: la demanda se aproxima con los puestos existentes y su
+tendencia.
 
-Método: tiempos reales en transporte público entre municipios (r5py con GTFS y OpenStreetMap, 7-9 h, mediana);
-índice de accesibilidad 2SFCA (Shen 1998) por sector, tiempo y modo: los puestos de cada destino se reparten
-entre los parados que pueden llegar a él (mide la competencia). Conserva el total de puestos, así que el
-simulador redistribuye y no infla. Desierto = tercio con menos acceso y tercio con más paro por habitante.
-Huecos declarados: paro 2026 solo en total (estructura sectorial estimada); GTFS de interurbanos publicado como
-datos parciales (26 municipios con tiempos estimados por regresión cuantílica, no se clasifican como
-desiertos); Madrid capital como un único destino.
+MÉTODO: tiempos reales en transporte público entre municipios con r5py (horarios oficiales, salidas cada minuto
+de 7 a 9 h, mediana). Índice «puestos por demandante» (2SFCA, Shen 1998): en cada destino, sus puestos ÷ los
+parados que pueden llegar; para la persona, la suma en los destinos a los que llega. Desierto = tercio con menos
+acceso y tercio con más paro por habitante. Cinco ejemplos por código postal en Madrid capital (Sol, Chamberí,
+Moncloa-Argüelles, Puente de Vallecas, Villa de Vallecas): el viaje sale de una estación de Metro del barrio.
+Límites declarados: Madrid capital como un único destino; GTFS de interurbanos publicado como datos parciales
+(26 municipios estimados, no clasificados como desiertos); paro de 2026 solo en total.
 
-Validación: frente a 2.377 viajes reales casa-trabajo de la EDM 2018 (80 pares), diferencia mediana −0,5 min,
-72 % de pares a ±15 min; a más acceso, menos paro (Spearman negativo en 103 municipios); robustez frente a
+VALIDACIÓN: frente a 2.377 viajes reales casa-trabajo de la EDM 2018 (80 pares), diferencia mediana −0,5 min,
+72 % de pares a ±15 min; a más acceso, menos paro (Spearman negativo en 103 municipios); robustez frente a una
 variante gaussiana del índice: Spearman 0,85.
 
-Impacto: con 10 min de ahorro de transporte, mejorar Parla saca de un desierto a sus 7.041 parados.
+HERRAMIENTAS: Python (pandas, geopandas), r5py (Java), scikit-learn, scipy, Streamlit + pydeck, Google Gemini,
+pytest (18 pruebas), GitHub (github.com/carlosrc24/alcanza).
 
-Herramientas: Python (pandas, geopandas), r5py (Java), scikit-learn, scipy, Streamlit + pydeck, Google Gemini
-(solo interpreta el texto libre; nunca puntúa ni recomienda; respaldo por reglas), pytest (16 pruebas), GitHub
-(github.com/carlosrc24/alcanza).
-
-Estructura:
+ESTRUCTURA:
 1. Portada: Alcanza + lema + equipo + UC3M.
-2. El problema con Lucía: «no es dónde hay empleo, sino a qué empleo llegas».
+2. El problema: «no es dónde hay empleo, sino a qué empleo llegas». Dos personas, dos lugares: Lucía en
+   Chamberí, 20 puestos por demandante en 15 min, frente a Javier en Parla, 4,4 en 45 min (cifras grandes
+   enfrentadas).
 3. Datos abiertos: fuentes como iconos agrupados (empleo, paro, transporte, recursos) + huecos tratados.
-4. Método: esquema en 3 pasos (tiempos reales → puestos y competidores → índice 2SFCA → recomendación).
+4. Método: esquema en 3 pasos (tiempos reales → puestos y competidores → puestos por demandante → tres caminos
+   y ofertas).
 5. Validación: cifras grandes (−0,5 min, 72 %, 2.377 viajes) + herramientas usadas.
 6. Cierre: dos preguntas respondidas (persona / administración), cifra de 7.041 parados, enlace a GitHub.
 
-Ponentes: diapos 1-2 Pedro, diapo 3 Ana, diapos 4-5 Jiaxing, diapo 6 Pedro (la demo la hacen Carlos y Ana).
+PONENTES: diapos 1-2 Pedro, diapo 3 Ana, diapos 4-5 Jiaxing, diapo 6 Pedro (la demo la hacen Carlos y Ana).
 ```

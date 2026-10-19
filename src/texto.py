@@ -43,6 +43,14 @@ ALIAS = {
     "humanes": "28073", "paracuellos": "28104", "mejorada": "28084", "velilla": "28167",
     "madrid capital": "28079",
 }
+# Barrios de Madrid capital con ejemplo por código postal (src/cp.py); «villa de vallecas» antes que «vallecas»
+BARRIOS = [
+    (r"\b28013\b|puerta del sol|\b(en|de|por) sol\b|\bopera\b|gran via|centro de madrid|madrid centro", "28013"),
+    (r"\b28010\b|chamberi|trafalgar|almagro", "28010"),
+    (r"\b28008\b|moncloa|arguelles", "28008"),
+    (r"\b28031\b|villa de vallecas", "28031"),
+    (r"\b28018\b|vallecas|numancia", "28018"),
+]
 NUMEROS = {"un": 1, "una": 1, "uno": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7,
            "ocho": 8, "nueve": 9, "diez": 10, "once": 11, "doce": 12}
 _NUM = r"(\d+|" + "|".join(NUMEROS) + r")"
@@ -110,6 +118,9 @@ def _coche(t: str):
 
 
 def _hijo(t: str):
+    # «sin hijos», «no tengo hijos», «no tengo coche ni hijos»
+    if re.search(r"\b(sin|ni|no tengo)( ningun| ninguna)? (hij[oa]s?|nin[oa]s?|bebes?)\b", t):
+        return False
     m = re.search(r"\b(hij[oa]s?|nin[oa]s?|bebes?|guarderia|peque\w*|criaturas?)\b", t)
     if not m:
         return None
@@ -132,15 +143,25 @@ def _tiempo(t: str):
                             (r"cuarto de hora", 15)):
         if re.search(patron, t):
             return minutos
+    m = re.search(r"\b(\d+)\s*h\b", t)  # «1h», «2 h»
+    if m:
+        return 60 * int(m.group(1))
     m = re.search(r"\b(\d+|una|un|dos)\s*horas?\b", t)
     return 60 * _num(m.group(1)) if m else None
+
+
+def _cp(t: str):
+    return next((cp for patron, cp in BARRIOS if re.search(patron, t)), None)
 
 
 def interpretar(texto: str, municipios: dict[str, str]) -> dict:
     """Devuelve los campos que se han podido entender (los demás quedan en None)."""
     t = " " + _norm(texto) + " "
     out = {"ocupacion": _ocupacion(t), "ine": _municipio(t, municipios), "coche": _coche(t), "hijo": _hijo(t),
-           "formacion": None, "T": _tiempo(t)}
+           "formacion": None, "T": _tiempo(t), "cp": _cp(t)}
+    if out["cp"] and out["ine"] is None:  # un barrio de Madrid implica Madrid capital
+        out["ine"] = "28079"
     if re.search(r"(estudiar|formarme|formacion|curso|fp\b|reciclarme|aprender)", t):
-        out["formacion"] = not re.search(r"no (quiero|puedo|me interesa) (estudiar|formarme)", t)
+        out["formacion"] = not re.search(r"\bno (quiero|puedo|me interesa|pienso|me gustaria|volveria a|voy a)"
+                                         r" (volver a )?(estudiar|formarme)", t)
     return out

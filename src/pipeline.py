@@ -9,7 +9,7 @@ import json
 
 import pandas as pd
 
-from . import datos, download, gtfs, indicadores, recursos, tiempos, validacion
+from . import cp, datos, download, gtfs, indicadores, recursos, tiempos, validacion
 from .config import PROCESSED, RAW
 
 
@@ -46,6 +46,9 @@ def main(recalcular_tiempos=False, plan_c=False):
     ind, dest = indicadores.calcular(tt, pu, pa, serie, mun)
     ind.to_csv(PROCESSED / "indicadores_municipio_sector.csv", index=False)
     dest.to_csv(PROCESSED / "oportunidad_destino.csv", index=False)
+    if (PROCESSED / "tiempos_cp.csv").exists():  # ejemplos por código postal (tiempos: python -m src.cp)
+        tcp = pd.read_csv(PROCESSED / "tiempos_cp.csv", dtype={"cp": str, "origen": str, "destino": str})
+        cp.calcular_indicadores(tcp).to_csv(PROCESSED / "indicadores_cp_sector.csv", index=False)
 
     print("6/6 Recursos")
     recursos.construir_recursos().to_csv(PROCESSED / "recursos.csv", index=False)

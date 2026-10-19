@@ -16,18 +16,18 @@ def _app():
 def test_ciudadania_y_controles():
     at = _app()
     assert any("Tus tres caminos" in m.value for m in at.markdown)
-    at.toggle(key="coche").set_value(True).run()
-    assert not at.exception
-    at.toggle(key="hijo").set_value(False).run()
-    at.toggle(key="formacion").set_value(False).run()
-    assert not at.exception
-    at.selectbox(key="ine").set_value("28001").run()   # La Acebeda: pueblo de sierra
-    assert not at.exception
-    at.select_slider(key="T").set_value(15).run()
-    assert not at.exception
+    # ejemplo de la demo (Chamberí) con reglas: Madrid, código postal 28010, 15 min
     at.button[0].click().run()                        # «Entender mi situación»
     assert not at.exception
-    assert at.session_state["ine"] == "28106" and at.session_state["hijo"] is True
+    assert (at.session_state["ine"], at.session_state["cp"], at.session_state["T"]) == ("28079", "28010", 15)
+    assert any("Chamberí (28010)" in m.value for m in at.markdown)
+    # los campos manuales están comentados: se cambia la situación escribiendo
+    at.text_area[0].input("Vivo en La Acebeda, soy camarero, tengo coche, sin hijos, máximo 15 min").run()
+    at.button[0].click().run()
+    assert not at.exception
+    assert at.session_state["ine"] == "28001" and at.session_state["coche"] is True and at.session_state["T"] == 15
+    at.select_slider(key="T").set_value(90).run()
+    assert not at.exception
 
 
 def test_planificacion_y_datos():

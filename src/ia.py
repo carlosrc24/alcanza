@@ -22,7 +22,7 @@ from .texto import _municipio, _norm, interpretar as interpretar_reglas
 MODELOS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"]
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
 TIMEOUT_S = 12
-CAMPOS = ("ocupacion", "ine", "coche", "hijo", "formacion", "T")
+CAMPOS = ("ocupacion", "ine", "coche", "hijo", "formacion", "T", "cp")
 
 
 def clave() -> str | None:
@@ -123,7 +123,8 @@ def _validar(r: dict, ocupaciones: dict[str, str], municipios: dict[str, str]) -
             "coche": booleano(r.get("coche")),
             "hijo": booleano(r.get("hijo_0_3")),
             "formacion": booleano(r.get("formacion")),
-            "T": int(T) if isinstance(T, (int, float)) and 5 <= T <= 240 else None}
+            "T": int(T) if isinstance(T, (int, float)) and 5 <= T <= 240 else None,
+            "cp": None}  # el código postal (barrio de Madrid) lo ponen siempre las reglas
 
 
 def interpretar(texto: str, ocupaciones: dict[str, str], municipios: dict[str, str],

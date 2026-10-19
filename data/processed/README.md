@@ -206,6 +206,35 @@ dato con «-» (100 a 500 observaciones). El gran grupo 6 no tiene dato publicab
 
 Códigos y nombres de los sectores.
 
+## Ejemplos por código postal en Madrid capital — `cp_ejemplos.csv`, `tiempos_cp.csv`, `indicadores_cp_sector.csv`
+
+Generados con `python -m src.cp` (r5py, ~8 GB de memoria; `--solo-indicadores` reutiliza los tiempos). Son
+**5 ejemplos preestablecidos**, no todos los códigos postales: el viaje sale de una estación de Metro del barrio
+en lugar del núcleo de Madrid. Van en ficheros aparte y **no** entran en desiertos, simulador ni ranking.
+
+`cp_ejemplos.csv` — 5 filas
+
+| Columna | Unidad | Descripción |
+|---|---|---|
+| ine | — | identificador del origen (`CP` + código postal), no es un código INE |
+| cp | — | código postal |
+| barrio | — | barrio de referencia |
+| estacion | — | estación de Metro usada como punto de salida (GTFS de Metro del Consorcio, `stops.txt`) |
+| lat, lon / x, y | grados WGS84 / m EPSG:25830 | coordenadas de esa estación |
+
+`tiempos_cp.csv` — 5 × 179 filas: mismas columnas y método que `tiempos_tp.csv` (columna `cp` añadida), con
+origen en la estación del barrio. Convenciones: Madrid como destino = 10 min (como cualquier viaje dentro del
+propio municipio); destinos con horarios incompletos en la fuente (`huecos_gtfs.csv`) = tiempo de la fila
+municipal de Madrid (estimado).
+
+`indicadores_cp_sector.csv` — 5 × 7 sectores × 6 umbrales × 2 modos: mismas columnas que
+`indicadores_municipio_sector.csv` (`origen` = `CP…`, más `cp`). Puestos por demandante = Σ R_j de los
+destinos alcanzables desde el barrio, con los R_j de `oportunidad_destino.csv`; **corrección**: en los destinos
+a los que llega el barrio y no el núcleo de Madrid se suman los parados de Madrid a los competidores (sus
+vecinos también llegarían). Sin ella, Pozuelo desde Moncloa a 45 min repartiría 41.555 puestos entre 825
+competidores y el indicador se multiplicaría por 5. Es la opción prudente: puede sobrestimar algo la
+competencia, no infravalorarla. Fecha: la de los datos de origen (puestos 31-12-2025, paro 31-03-2026).
+
 ## Tabla de referencia hecha a mano: `data/ref/ocupaciones.csv`
 
 26 ocupaciones con su sector, código CNO-11 (4 dígitos, orientativo), tres «saltos cortos»

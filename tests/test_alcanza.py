@@ -70,7 +70,7 @@ def test_caso_lucia(D):
     r = interpretar("He trabajado 6 años de auxiliar administrativa. Vivo en Parla, no tengo coche y tengo "
                     "un niño de 2 años. Si merece la pena, volvería a estudiar.", m)
     assert r == {"ocupacion": "aux_admin", "ine": "28106", "coche": False, "hijo": True,
-                 "formacion": True, "T": None}
+                 "formacion": True, "T": None, "cp": None}
     res = R.recomendar(D, "aux_admin", "28106", hijo=True, T=45)
     assert [t.tipo for t in res["tarjetas"]] == ["directo", "salto_corto", "salto_formacion"]
 
@@ -89,6 +89,31 @@ def test_texto_libre(D):
     for texto, ine, ocu, coche, hijo, T in casos:
         r = interpretar(texto, D["nom"])
         assert (r["ine"], r["ocupacion"], r["coche"], r["hijo"], r["T"]) == (ine, ocu, coche, hijo, T), texto
+
+
+def test_barrios_de_madrid(D):
+    """Los barrios con ejemplo por código postal se reconocen y fijan Madrid capital."""
+    from src.texto import interpretar
+    casos = [("Vivo en Chamberí, soy camarero", "28010"), ("vivo en Villa de Vallecas", "28031"),
+             ("soy de Vallecas, sin coche", "28018"), ("vivo en Argüelles", "28008"), ("vivo en el 28013", "28013"),
+             ("operario en Parla, quiero un centro de formación", None)]
+    for texto, cp in casos:
+        r = interpretar(texto, D["nom"])
+        assert r["cp"] == cp, texto
+        if cp:
+            assert r["ine"] == "28079", texto
+
+
+def test_negaciones_de_los_ejemplos_de_la_demo(D):
+    """Plan B sin IA: «No volvería a estudiar» y «ni hijos» se leen como negaciones."""
+    from src.texto import interpretar
+    r = interpretar("He trabajado 3 años de auxiliar administrativa. Vivo en Chamberí, no tengo coche y tengo un "
+                    "niño de 2 años. No volvería a estudiar y lo máximo que estaría dispuesto a viajar es 15 min.",
+                    D["nom"])
+    assert (r["ine"], r["cp"], r["hijo"], r["formacion"], r["T"]) == ("28079", "28010", True, False, 15)
+    r = interpretar("He trabajado 6 años de camarero. Vivo en Parla, no tengo coche ni hijos. Si merece la pena, "
+                    "volvería a estudiar y lo máximo que estaría dispuesta a viajar es 45 min.", D["nom"])
+    assert (r["ocupacion"], r["ine"], r["coche"], r["hijo"], r["formacion"], r["T"]) ==         ("camarero", "28106", False, False, True, 45)
 
 
 def test_simulador_y_ranking(D):
