@@ -134,6 +134,8 @@ iframe, [data-testid="stDeckGlJsonChart"] {border-radius: 16px; overflow: hidden
   place-items: center; font-weight: 700; font-size: 1.05rem; color: var(--ink); line-height: 1;}
 .alc-ring small {display: block; font-size: .55rem; color: var(--muted); font-weight: 500;}
 .alc-card.bloqueada {opacity: .5; filter: grayscale(.6);}
+.alc-card.mejor {border: 2px solid var(--c);}
+.alc-card .mejor-tag {display: block; margin-top: 6px; font-size: .74rem; font-weight: 700; color: var(--c);}
 
 /* --- pie --- */
 .alc-pie {font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 28px;
@@ -360,6 +362,8 @@ def vista_ciudadania():
                                           disabled=not ss.hijo),
                 "esfuerzo": st.slider("Evitar formación larga", 0, 5, 1 if ss.formacion else 4),
             }
+            st.caption("Tus prioridades cambian la puntuación y el orden de tus tres caminos. El mapa muestra "
+                       "dónde está el empleo de tu ocupación: depende del tiempo, el municipio y el coche.")
 
     res = R.recomendar(D, ss.ocupacion, ss.ine, coche=ss.coche, hijo=ss.hijo, formacion=ss.formacion,
                        T=T, pesos=pesos)
@@ -442,7 +446,9 @@ def vista_ciudadania():
     cols = st.columns(3, gap="medium")
     estilos = {"directo": ("", "Trabajo directo", "◎"), "salto_corto": ("corto", "Salto corto", "↗"),
                "salto_formacion": ("form", "Salto con formación", "✦")}
-    for col, tj in zip(cols, tarjetas):
+    # de mayor a menor puntuación; el salto con formación va al final si no quiere formarse
+    orden = sorted(tarjetas, key=lambda t: (t.tipo == "salto_formacion" and not ss.formacion, -t.puntuacion))
+    for n, (col, tj) in enumerate(zip(cols, orden)):
         cls, nombre_tipo, icono = estilos[tj.tipo]
         d0 = tj.destinos.iloc[0] if len(tj.destinos) else None
         lugar = f"{e(d0['nombre'])} · {int(d0['minutos'])} min" if d0 is not None else "Sin destinos en ese tiempo"
@@ -453,9 +459,10 @@ def vista_ciudadania():
                  f"~{fmt(sal / 1000, 1)} k€/año" if sal else ""]
         bloqueada = tj.tipo == "salto_formacion" and not ss.formacion
         punt = int(round(tj.puntuacion * 100))
+        mejor = '<span class="mejor-tag">★ El que mejor encaja con tus prioridades</span>' if n == 0 else ""
         with col:
-            st.markdown(f"""<div class="alc-card {cls}{' bloqueada' if bloqueada else ''}">
-              <div class="top"><div><span class="tipo">{icono} {nombre_tipo}</span>
+            st.markdown(f"""<div class="alc-card {cls}{' bloqueada' if bloqueada else ''}{' mejor' if n == 0 else ''}">
+              <div class="top"><div><span class="tipo">{icono} {nombre_tipo}</span>{mejor}
                 <div class="titulo">{e(tj.ocupacion)}</div>
                 <div class="lugar">{PIN}{lugar}</div></div>
                 <div class="alc-ring" style="--p:{punt}" title="Puntuación con tus prioridades">
