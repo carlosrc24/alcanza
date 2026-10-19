@@ -65,6 +65,9 @@ provisional: cambiadlo como queráis.
    al primer puesto y se marca como «el que mejor encaja con tus prioridades».
    > «Cada persona decide qué le importa: la app reordena sus caminos al instante.»
 6. En el mapa: **escuelas infantiles** (17 en Parla) y centros de formación cerca.
+7. Pulsar **Indeed** (o LinkedIn / InfoJobs) en la tarjeta mejor valorada: se abre la búsqueda real de hoy
+   para esa ocupación en ese municipio.
+   > «Alcanza te dice dónde buscar; con un clic ves las ofertas que hay ahí hoy.»
 
 ## 7:30–8:45 · Ana — Demo «Orientación y planificación»
 

@@ -23,7 +23,10 @@ empleo tiene esto en cuenta.
    - Un **mapa** con los municipios a su alcance, los destinos recomendados, las escuelas infantiles y los
      centros de formación.
    - **Tres caminos**: su mismo empleo, un empleo parecido sin formación (salto corto) y otro con formación.
-     Cada uno con puntuación desglosada, el «por qué» en lenguaje claro y dónde buscar.
+     Cada uno con puntuación desglosada, el «por qué» en lenguaje claro y dónde buscar. Se ordenan según sus
+     prioridades.
+   - En cada camino, **botones a LinkedIn, InfoJobs e Indeed** que abren la búsqueda de ofertas de hoy para esa
+     ocupación en el municipio recomendado. Son solo enlaces: las ofertas no entran en el cálculo.
 
 **Vista «Orientación y planificación» (para orientadores y la Consejería)**
 

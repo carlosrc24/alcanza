@@ -19,7 +19,8 @@ Jiaxing Zhu, Pedro González Carnero (Máster en Ingeniería Informática, UC3M)
 Qué hace: recomienda a una persona en paro de la Comunidad de Madrid qué empleo puede alcanzar de verdad en
 transporte público, cuánta gente compite por él, qué empleo parecido puede hacer o al que puede llegar con
 formación, y qué escuelas infantiles, formación y servicios sociales tiene cerca. La persona lo cuenta con sus
-palabras y ajusta el tiempo máximo de viaje y sus prioridades. Segunda vista para orientadores/Consejería: mapa
+palabras y ajusta el tiempo máximo de viaje y sus prioridades. Cada recomendación lleva botones que abren las
+ofertas de hoy en LinkedIn, InfoJobs e Indeed para esa ocupación en el municipio recomendado. Segunda vista para orientadores/Consejería: mapa
 de «desiertos de empleo accesible», simulador «¿y si…?» y ranking de mejoras de transporte.
 
 Caso conductor: Lucía, auxiliar administrativa en Parla, sin coche, hijo de 2 años, dispuesta a formarse.

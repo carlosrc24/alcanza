@@ -3,8 +3,10 @@ import copy
 import html
 import json
 import os
+import re
 import sys
 from pathlib import Path
+from urllib.parse import urlencode
 
 import numpy as np
 import pandas as pd
@@ -135,6 +137,11 @@ iframe, [data-testid="stDeckGlJsonChart"] {border-radius: 16px; overflow: hidden
 .alc-ring small {display: block; font-size: .55rem; color: var(--muted); font-weight: 500;}
 .alc-card.bloqueada {opacity: .5; filter: grayscale(.6);}
 .alc-card.mejor {border: 2px solid var(--c);}
+.alc-card .ofertas {display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid var(--line); font-size: .78rem; color: var(--muted);}
+.alc-card .ofertas a {border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 2px 10px;
+  font-weight: 600; text-decoration: none;}
+.alc-card .ofertas a:hover {background: var(--cl);}
 .alc-card .mejor-tag {display: block; margin-top: 6px; font-size: .74rem; font-weight: 700; color: var(--c);}
 
 /* --- pie --- */
@@ -246,6 +253,20 @@ def leyenda(items):
     st.markdown(f'<div class="alc-leyenda">{"".join(partes)}</div>', unsafe_allow_html=True)
 
 
+def enlaces_ofertas(ocupacion: str, municipio: str) -> str:
+    """Botones que abren la búsqueda de ofertas ya hecha en los portales de empleo (sin API: solo enlaces)."""
+    # «Técnico/a informático/a o programador/a» → «Técnico informático»
+    q = re.sub(r"/[a-záéíóú]+\b", "", re.split(r" (?:o|u) | \(", ocupacion)[0]).strip()
+    lugar = R.nombre_municipio(municipio)
+    urls = {"LinkedIn": "https://www.linkedin.com/jobs/search/?" + urlencode(
+                {"keywords": q, "location": f"{lugar}, Comunidad de Madrid, España"}),
+            "InfoJobs": "https://www.infojobs.net/jobsearch/search-results/list.xhtml?" + urlencode(
+                {"keyword": q, "provinceIds": 33}),  # 33 = provincia de Madrid
+            "Indeed": "https://es.indeed.com/jobs?" + urlencode({"q": q, "l": lugar})}
+    botones = "".join(f'<a href="{e(u)}" target="_blank" rel="noopener">{p}</a>' for p, u in urls.items())
+    return f'<div class="ofertas"><span>Ofertas de hoy · {e(q.lower())} en {e(lugar)}:</span>{botones}</div>'
+
+
 def mapa(features_props, puntos=None, centro=(40.42, -3.70), zoom=8.3, alto=520):
     geo = copy.deepcopy(D["geo"])
     for f in geo["features"]:
@@ -279,12 +300,6 @@ st.sidebar.markdown(f'<div class="alc-brand">{LOGO}<div><div class="nombre">Alca
                     f'<div class="lema">el empleo que está a tu alcance</div></div></div>', unsafe_allow_html=True)
 vista = st.sidebar.radio("Vista", list(VISTAS), label_visibility="collapsed",
                          format_func=lambda v: f"{VISTAS[v]}  {v}")
-st.sidebar.markdown(
-    '<div class="alc-side-note"><b>MAD Open Data Challenge 2026.</b> Prototipo con datos abiertos de la '
-    'Comunidad de Madrid y del Consorcio Regional de Transportes. Las cifras orientan: no son ofertas de empleo.'
-    '<div class="alc-fuentes"><span>Afiliación SS</span><span>Paro registrado</span><span>GTFS Consorcio</span>'
-    '<span>Renfe Cercanías</span><span>Centros educativos</span><span>Servicios sociales</span>'
-    '<span>OpenStreetMap</span></div></div>', unsafe_allow_html=True)
 
 
 # =============================================================================== CIUDADANÍA
@@ -468,7 +483,8 @@ def vista_ciudadania():
                 <div class="alc-ring" style="--p:{punt}" title="Puntuación con tus prioridades">
                   <span><div>{punt}<small>/100</small></div></span></div></div>
               <div class="chips">{''.join(f'<span>{c}</span>' for c in chips if c)}</div>
-              <div class="porque">{e(tj.resumen)}</div></div>""", unsafe_allow_html=True)
+              {enlaces_ofertas(tj.ocupacion, d0["nombre"] if d0 is not None else NOM[ss.ine])}</div>""",
+                        unsafe_allow_html=True)
             if bloqueada:
                 st.caption("Activa «Dispuesta/o a formarme» para valorar este camino.")
             with st.expander("Por qué y cómo", icon=":material/insights:"):
@@ -497,13 +513,6 @@ def vista_ciudadania():
                 if tj.tipo == "salto_corto" and len(res["alternativas_cortas"]) > 1:
                     otras = [a.ocupacion for a in res["alternativas_cortas"] if a.ocupacion_id != tj.ocupacion_id]
                     st.caption("Otros saltos cortos valorados: " + ", ".join(otras))
-
-    st.markdown(
-        f'<div class="alc-pie">No existen datos abiertos de ofertas de empleo: la demanda se aproxima con los '
-        f'puestos existentes (afiliación por centro de trabajo, 31-12-{int(D["bal"]["anio_puestos"].iloc[0])}), '
-        f'su tendencia y el paro registrado (31-03-{int(D["par"]["anio"].iloc[0])}). <span class="alc-est">estimado</span> '
-        f'el reparto del paro de «Servicios» entre ramas de servicios. Tiempos: {D["metodo_tp"]}. Detalle en '
-        f'«Datos y método».</div>', unsafe_allow_html=True)
 
 
 # =============================================================================== PLANIFICACIÓN
@@ -622,22 +631,15 @@ def vista_planificacion():
                     '</div><div class="d">la misma mejora aplicada a cada municipio, uno a uno</div></div>',
                     unsafe_allow_html=True)
         rk = ranking_mejoras(sec, T, ahorro, solo_madrid)
-        top = rk.head(10)
+        top = rk.head(5)
         st.dataframe(pd.DataFrame({
-            "Municipio que mejora": top["municipio"],
-            "Salen de desiertos": top["salen_neto"].round(0).astype(int),
-            "Parados": top["parados"].round(0).astype(int),
-            "Acceso antes": top["acceso_antes"], "Acceso después": top["acceso_despues"],
-            "+ Puestos": (top["puestos_alcanzables_despues"] - top["puestos_alcanzables_antes"]).astype(int),
+            "Municipio que mejora su transporte": top["municipio"],
+            "Parados que salen de un desierto": top["salen_neto"].round(0).astype(int),
         }), hide_index=True, use_container_width=True, column_config={
-            "Acceso antes": st.column_config.NumberColumn(format="×%.2f"),
-            "Acceso después": st.column_config.NumberColumn(format="×%.2f"),
-            "+ Puestos": st.column_config.NumberColumn(format="+%d", help="Puestos alcanzables de más desde ese municipio"),
-            "Salen de desiertos": st.column_config.NumberColumn(help="Parados de toda la región que dejan de vivir en un desierto")})
-        st.caption(f"Ordenado por parados (de toda la región) que dejan de vivir en un desierto de empleo accesible; "
-                   f"a igualdad, por la ganancia de acceso de los parados del propio municipio. El 2SFCA reparte: lo "
-                   f"que gana un municipio lo pierde en parte la competencia en otros, por eso no se suma el acceso. "
-                   f"Se excluyen Madrid capital y los {len(D['hueco'])} municipios con horarios incompletos.")
+            "Parados que salen de un desierto": st.column_config.ProgressColumn(
+                format="%d", min_value=0, max_value=max(int(top["salen_neto"].max()), 1))})
+        st.caption("Parados de toda la región que dejan de vivir en un desierto. Sin Madrid capital ni los municipios "
+                   "con horarios incompletos.")
 
 
 # =============================================================================== DATOS
@@ -718,11 +720,19 @@ def vista_datos():
     with tab_m:
         st.markdown("**Pregunta:** ¿cuánto empleo de mi sector puedo alcanzar en transporte público, y con cuánta "
                     "gente compito por él?")
-        st.markdown("**Indicador principal — puestos por demandante (2SFCA, Shen 1998).**")
-        st.markdown('<div class="alc-formula"><b>1.</b> para cada destino j: &nbsp;R<sub>j</sub> = puestos<sub>j</sub> '
-                    '/ Σ<sub>k</sub> parados<sub>k</sub> · [t<sub>kj</sub> ≤ T]<br><b>2.</b> para cada origen i: '
-                    '&nbsp;A<sub>i</sub> = Σ<sub>j</sub> R<sub>j</sub> · [t<sub>ij</sub> ≤ T]</div>',
-                    unsafe_allow_html=True)
+        st.markdown("**Indicador principal — puestos por demandante**, en dos pasos:")
+        st.markdown('<div class="alc-formula"><b>1. En cada destino:</b> &nbsp;puestos del sector ÷ parados del sector '
+                    'que pueden llegar a él en T minutos<br><b>2. Para ti:</b> &nbsp;suma de lo anterior en todos los '
+                    'destinos a los que llegas en T minutos</div>', unsafe_allow_html=True)
+        st.caption("Ejemplo: si llegas a Getafe (10.000 puestos, 5.000 parados que también llegan → 2) y a Pinto "
+                   "(3.000 puestos, 1.000 parados → 3), tienes 2 + 3 = 5 puestos por demandante. Cuantos más parados "
+                   "llegan a un destino, menos toca a cada uno: así se mide la competencia.")
+        with st.expander("Fórmula técnica (2SFCA, Shen 1998)"):
+            st.markdown('<div class="alc-formula"><b>1.</b> para cada destino j: &nbsp;R<sub>j</sub> = '
+                        'puestos<sub>j</sub> / Σ<sub>k</sub> parados<sub>k</sub> · [t<sub>kj</sub> ≤ T]<br><b>2.</b> '
+                        'para cada origen i: &nbsp;A<sub>i</sub> = Σ<sub>j</sub> R<sub>j</sub> · [t<sub>ij</sub> ≤ T]'
+                        '</div>', unsafe_allow_html=True)
+            st.caption("[t ≤ T] vale 1 si el viaje dura T minutos o menos y 0 si no.")
         st.markdown("""
 Cada modo tiene su propio cálculo: en transporte público se compite con parados que se mueven en transporte
 público; con coche, con parados que también tienen coche. *Índice relativo* = `A_i` dividido entre la ratio regional
